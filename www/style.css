@@ -19,6 +19,7 @@ main { padding: 16px 28px 40px; }
 .card:hover { transform: translateY(-3px); border-color: #ffd166; }
 .card.placeholder { opacity: .55; cursor: default; }
 .card.placeholder:hover { transform: none; border-color: transparent; }
+.card .ticon { width: 64px; height: 64px; object-fit: contain; border-radius: 12px; background: #fff; }
 .card .icon { font-size: 34px; }
 .card h3 { margin: 8px 0 6px; font-size: 19px; }
 .card p { color: #b9c7ee; font-size: 14px; line-height: 1.45; }
@@ -38,6 +39,7 @@ button:hover { filter: brightness(1.08); }
 @media (max-width: 800px) { .sim { grid-template-columns: 1fr; } }
 .panel { background: #22355f; border-radius: 16px; padding: 16px; }
 .panel h2 { font-size: 20px; margin-bottom: 4px; }
+.panel h2 .hicon { width: 28px; height: 28px; object-fit: contain; border-radius: 6px; background: #fff; vertical-align: middle; margin-right: 8px; }
 .panel .blurb { color: #b9c7ee; font-size: 13px; margin-bottom: 14px; line-height: 1.45; }
 .back { margin-bottom: 14px; }
 

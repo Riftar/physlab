@@ -105,7 +105,21 @@
     return grid;
   }
 
-  var ICONS = { battery: "🔋", ball: "🎯", flame: "🔥", wave: "🌊", clock: "⏱️", eye: "👁️", press: "🛠️", bolt: "⚡" };
+  var ICONS = { battery: "🔋", ball: "🎯", flame: "🔥", water: "💧", wave: "🌊", pendulum: "⏱️", eye: "👁️", press: "🛠️", bolt: "⚡" };
+
+  function topicIcon(t) {
+    var img = document.createElement("img");
+    img.className = "ticon";
+    img.src = "icons/icon_" + t.icon + ".png";
+    img.alt = t.title;
+    img.addEventListener("error", function () {
+      var s = document.createElement("div");
+      s.className = "icon";
+      s.textContent = ICONS[t.icon] || "🔬";
+      img.replaceWith(s);
+    });
+    return img;
+  }
 
   function topicCards(topics, onPick) {
     var grid = document.createElement("div");
@@ -113,8 +127,7 @@
     topics.forEach(function (t) {
       var c = document.createElement("div");
       c.className = "card " + (t.status === "ready" ? "ready" : "placeholder");
-      var ic = document.createElement("div"); ic.className = "icon";
-      ic.textContent = ICONS[t.icon] || "🔬";
+      c.appendChild(topicIcon(t));
       var h = document.createElement("h3"); h.textContent = t.title;
       var p = document.createElement("p"); p.textContent = t.blurb;
       var st = document.createElement("div");
@@ -122,7 +135,7 @@
       st.textContent = t.status === "ready" ? "● READY TO PLAY" : "◐ COMING SOON";
       var f = document.createElement("div"); f.className = "formula-preview";
       f.textContent = (t.formulas && t.formulas[0] && t.formulas[0].expr) || "";
-      c.appendChild(ic); c.appendChild(h); c.appendChild(p); c.appendChild(st); c.appendChild(f);
+      c.appendChild(h); c.appendChild(p); c.appendChild(st); c.appendChild(f);
       if (t.status === "ready") c.addEventListener("click", function () { onPick(t); });
       grid.appendChild(c);
     });

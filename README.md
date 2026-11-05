@@ -39,6 +39,10 @@ your machine.
 - `www/` — the whole client: control panel + formula panel kit
   (`js/ui.js`), software 3D renderer (`js/objects3d.js`), particle
   effects (`js/particles.js`), scene painters (`js/scenes.js`)
+- `www/icons/` — topic icon set (flat vector-style, kid-friendly),
+  AI-generated with Codex's built-in image generation and downscaled
+  to 128px; cards fall back to emoji automatically if an icon is
+  missing
 - `tests/` — physics postconditions, API edges, determinism gates,
   and a fixture generator (`tests/gen_fixtures.py`) whose output must
   regenerate byte-identically

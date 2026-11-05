@@ -89,6 +89,13 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertIn(b"physlab", body)
 
+    def test_topic_icons_served(self):
+        for icon in ("battery", "ball", "flame", "water", "pendulum",
+                     "eye", "press", "bolt", "wave"):
+            code, body = get("/icons/icon_%s.png" % icon)
+            self.assertEqual(code, 200, icon)
+            self.assertTrue(body.startswith(b"\x89PNG"), icon)
+
     def test_traversal_blocked(self):
         for probe in ("/../physlab/server.py", "/%2e%2e/physlab/server.py",
                       "/js/../../physlab/__init__.py"):

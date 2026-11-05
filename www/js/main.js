@@ -34,6 +34,9 @@
     back.textContent = "← all experiments";
     back.addEventListener("click", showPicker);
     var h2 = document.createElement("h2"); h2.textContent = t.title;
+    var hicon = document.createElement("img");
+    hicon.className = "hicon"; hicon.src = "icons/icon_" + t.icon + ".png"; hicon.alt = "";
+    h2.insertBefore(hicon, h2.firstChild);
     var blurb = document.createElement("div"); blurb.className = "blurb"; blurb.textContent = t.blurb;
     var fpanel = PL.ui.formulaPanel(t.formulas);
     left.appendChild(back); left.appendChild(h2); left.appendChild(blurb);
