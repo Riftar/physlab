@@ -43,6 +43,11 @@ your machine.
   AI-generated with Codex's built-in image generation and downscaled
   to 128px; cards fall back to emoji automatically if an icon is
   missing
+- `www/sprites/` — simulation item sprites (lamp, battery, switch,
+  resistor, block, ball, ramp, wire), same AI source. The client keys
+  out their white background at load and tints them at draw time, so
+  the heat blocks keep the physics-true temperature coloring; the
+  software 3D primitives remain as fallback if a sprite is missing
 - `tests/` — physics postconditions, API edges, determinism gates,
   and a fixture generator (`tests/gen_fixtures.py`) whose output must
   regenerate byte-identically

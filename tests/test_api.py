@@ -96,6 +96,13 @@ class TestAPI(unittest.TestCase):
             self.assertEqual(code, 200, icon)
             self.assertTrue(body.startswith(b"\x89PNG"), icon)
 
+    def test_sim_sprites_served(self):
+        for name in ("lamp", "battery", "switch", "resistor", "block",
+                     "ball", "ramp", "wire"):
+            code, body = get("/sprites/item_%s.png" % name)
+            self.assertEqual(code, 200, name)
+            self.assertTrue(body.startswith(b"\x89PNG"), name)
+
     def test_traversal_blocked(self):
         for probe in ("/../physlab/server.py", "/%2e%2e/physlab/server.py",
                       "/js/../../physlab/__init__.py"):
