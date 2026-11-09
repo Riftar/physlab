@@ -1,135 +1,233 @@
-/* physlab main client: topic picker -> sim view. The engine is the server;
-   this panel only fetches /api/run with the current params and plays frames. */
+/* physlab main client: topic picker -> experiment page. The engine is the
+   server; the page fetches /api/run with the current params and plays
+   the frames. Everything an experiment page is made of is a reusable
+   component:
+
+     PL.ui.simLayout     page skeleton           (ui.js)
+     PL.ui.presetBar     one-click set-ups        (ui.js)
+     PL.ui.ComparePanel  A/B compare mode         (ui.js)
+     PL.ui.ControlPanel  parameter sliders        (ui.js)
+     PL.ui.PlayBar       run / reset / view       (ui.js)
+     PL.ui.ResultsPanel  notes + readouts         (ui.js)
+     PL.ui.learnPanel    formulas, figures, life  (ui.js)
+     PL.Stage            zoomable canvas          (stage.js)
+     PL.Player           simulation-time playback (player.js)
+
+   so this file is only routing + gluing them to one parameter model.
+
+   Deep links: #/<topic>?<param>=<v>&b.<param>=<v>&view.<opt>=<v>&at=<s>
+     b.*    opens compare mode, B = a copy of A with these overrides
+     view.* client-side view options (arrows on/off, ...)
+     at     fast-forwards the simulation to that time and pauses there
+   The hash follows your changes, so any set-up can be shared; presets
+   and "Try this setup" are such links. #/quiz... and #/sandbox... routes
+   belong to quiz.js and sandbox.js. When a route has finished
+   loading (and seeking), <html data-sim-ready="1">. */
 (function () {
   "use strict";
 
   var app = document.getElementById("app");
-  var state = { topics: null, topic: null, result: null, params: {}, frame: 0,
-                fprog: 0, playing: false, lastTs: null, raf: null, debounce: null };
+  var U = PL.ui;
+  var state = { topics: null, page: null };
 
-  function stopAnim() { cancelAnimationFrame(state.raf); state.playing = false; }
-
-  // playback speed per topic (heat is time-lapsed, others near real-time)
-  var SPEED = { circuits: 1, motion: 1, heat: 120 };
-
-  function fetchJSON(url) { return fetch(url).then(function (r) {
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return r.json();
-  }); }
-
-  function showPicker() {
-    stopAnim();
-    app.innerHTML = "";
-    app.appendChild(PL.ui.topicCards(state.topics, openTopic));
+  function fetchJSON(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) return r.json().catch(function () { return {}; }).then(function (b) {
+        throw new Error(b.error || ("HTTP " + r.status));
+      });
+      return r.json();
+    });
   }
 
-  function openTopic(t) {
-    state.topic = t;
-    state.params = {};
-    t.params.forEach(function (p) { state.params[p.id] = p.default; });
-    app.innerHTML = "";
-    var sim = document.createElement("div"); sim.className = "sim";
-    var left = document.createElement("div"); left.className = "panel";
-    var back = document.createElement("button"); back.className = "secondary back";
-    back.textContent = "← all experiments";
-    back.addEventListener("click", showPicker);
-    var h2 = document.createElement("h2"); h2.textContent = t.title;
-    var hicon = document.createElement("img");
-    hicon.className = "hicon"; hicon.src = "icons/icon_" + t.icon + ".png"; hicon.alt = "";
-    h2.insertBefore(hicon, h2.firstChild);
-    var blurb = document.createElement("div"); blurb.className = "blurb"; blurb.textContent = t.blurb;
-    var fpanel = PL.ui.formulaPanel(t.formulas);
-    left.appendChild(back); left.appendChild(h2); left.appendChild(blurb);
-    var ctlBox = document.createElement("div");
-    left.appendChild(ctlBox);
-    var right = document.createElement("div");
-    var stage = document.createElement("div"); stage.className = "stage";
-    var canvas = document.createElement("canvas");
-    canvas.id = "stage"; canvas.width = 880; canvas.height = 500;
-    stage.appendChild(canvas);
-    var playrow = document.createElement("div"); playrow.className = "playrow";
-    var play = document.createElement("button"); play.textContent = "▶ run";
-    var reset = document.createElement("button"); reset.className = "secondary"; reset.textContent = "↺ reset";
-    playrow.appendChild(play); playrow.appendChild(reset);
-    var readBox = document.createElement("div");
-    right.appendChild(stage); right.appendChild(playrow); right.appendChild(readBox);
-    right.appendChild(fpanel.el);
-    sim.appendChild(left); sim.appendChild(right);
-    app.appendChild(sim);
-    var ctx = canvas.getContext("2d");
+  function setReady(on) { document.documentElement.setAttribute("data-sim-ready", on ? "1" : "0"); }
 
-    function buildControls() {
-      ctlBox.innerHTML = "";
-      ctlBox.appendChild(PL.ui.controls(t.params, state.params, function (id, v) {
-        state.params[id] = v;
-        clearTimeout(state.debounce);
-        state.debounce = setTimeout(run, 250);
-      }));
+  function closePage() {
+    if (state.page) state.page.destroy();
+    state.page = null;
+  }
+
+  function showPicker() {
+    closePage();
+    app.innerHTML = "";
+    var cta = U.el("button", "quizcta");
+    cta.type = "button";
+    cta.appendChild(U.el("span", "qi", "🎯"));
+    var txt = U.el("span");
+    txt.appendChild(U.el("b", null, "Physics challenges"));
+    txt.appendChild(U.el("span", null, " - set the right value and watch the experiment prove it. "
+                         + "3 per experiment: easy, medium, hard."));
+    cta.appendChild(txt);
+    cta.addEventListener("click", function () { location.hash = "#/quiz"; });
+    var sb = U.el("button", "quizcta sbcta");
+    sb.type = "button";
+    sb.appendChild(U.el("span", "qi", "🏖️"));
+    var stx = U.el("span");
+    stx.appendChild(U.el("b", null, "Sandbox"));
+    stx.appendChild(U.el("span", null, " - build your own world from real things: balls, planets, weather, " +
+                         "ramps you shape, circuits you wire."));
+    sb.appendChild(stx);
+    sb.addEventListener("click", function () { location.hash = "#/sandbox"; });
+    var ctas = U.el("div", "ctas");
+    ctas.appendChild(cta); ctas.appendChild(sb);
+    app.appendChild(ctas);
+    app.appendChild(U.topicCards(state.topics, function (t) { location.hash = "#/" + t.id; }));
+    document.title = "physlab - see the formula happen";
+    setReady(true);
+  }
+
+  function route() {
+    var r = PL.route.parse(location.hash);
+    if (r && (r.id === "quiz" || r.id.indexOf("quiz/") === 0)) {
+      closePage();
+      state.page = PL.quiz.open(app, r.id.slice(5));
+      return;
+    }
+    if (r && (r.id === "sandbox" || r.id.indexOf("sandbox/") === 0)) {
+      closePage();
+      state.page = PL.sandboxUI.open(app, r.id.slice(8), r, state.topics);
+      return;
+    }
+    var t = r && state.topics.filter(function (x) { return x.id === r.id && x.status === "ready"; })[0];
+    if (t) { closePage(); state.page = new SimPage(t, r); } else showPicker();
+  }
+
+  function defaults(t) {
+    var p = {};
+    t.params.forEach(function (x) { p[x.id] = x.default; });
+    return p;
+  }
+
+  function query(params) {
+    return Object.keys(params).map(function (k) {
+      var v = params[k];
+      return k + "=" + encodeURIComponent(typeof v === "boolean" ? (v ? "1" : "0") : v);
+    }).join("&");
+  }
+
+  /* ---------------- one experiment page ---------------- */
+  function SimPage(t, rt) {
+    var that = this, scene = PL.scenes[t.id];
+    var model = { sets: [defaults(t)], active: 0, compare: false };
+    var view = {}, token = 0, debounce = null;
+    var seekTo = rt && isFinite(rt.at) ? rt.at : null;
+
+    // deep-link overrides
+    (scene.options || []).forEach(function (o) {
+      var want = rt && rt.view[o.id];
+      view[o.id] = want != null && o.choices.some(function (c) { return c.id === want; }) ? want : o.default;
+    });
+    if (rt) {
+      t.params.forEach(function (p) { if (rt.a[p.id] != null) model.sets[0][p.id] = PL.route.coerce(p, rt.a[p.id]); });
+      if (rt.b && t.compare) {
+        model.compare = true; model.active = 1;
+        model.sets[1] = JSON.parse(JSON.stringify(model.sets[0]));
+        t.params.forEach(function (p) { if (rt.b[p.id] != null) model.sets[1][p.id] = PL.route.coerce(p, rt.b[p.id]); });
+      }
+    }
+
+    setReady(false);
+    window.scrollTo(0, 0);
+    document.title = "physlab - " + t.title;
+
+    // components
+    var L = U.simLayout(t, function () { location.hash = "#/"; });
+    L.left.insertBefore(PL.sandboxUI.modeToggle(t.id, "experiment"), L.left.querySelector("h2"));
+    var stage = new PL.Stage(880, 500);
+    var bar = U.PlayBar(scene.options, view, {
+      play: function () { player.toggle(); },
+      reset: function () { player.reset(); },
+      view: function () { syncHash(); player.redraw(); }
+    });
+    var player = new PL.Player(stage, scene, bar.setLabel);
+    var cmp = U.ComparePanel(t, model, function (kind) {
+      ctl.render();
+      if (kind !== "tab") run();
+    });
+    var ctl = U.ControlPanel(t, model, function () { cmp.updateDiff(); schedule(250); });
+    var results = U.ResultsPanel();
+    var learn = t.learn ? U.learnPanel(t) : U.formulaPanel(t.formulas);
+
+    L.presets.appendChild(U.presetBar(t.learn && t.learn.presets));
+    var qlink = U.el("button", "secondary small quizlink", "🎯 Take the " + t.title + " challenges");
+    qlink.addEventListener("click", function () { location.hash = "#/quiz"; });
+    L.presets.appendChild(qlink);
+    L.compare.appendChild(cmp.el);
+    L.controls.appendChild(ctl.el);
+    L.stage.appendChild(stage.el);
+    L.playbar.appendChild(bar.el);
+    L.notes.appendChild(results.notes);
+    L.results.appendChild(results.readouts);
+    L.learn.appendChild(learn.el);
+    app.innerHTML = "";
+    app.appendChild(L.root);
+
+    // camera moves redraw a paused scene; dragging a scene handle edits params
+    stage.onChange = function () { player.redraw(); };
+    stage.cam.setParams = function (changes, done) {
+      var set = model.sets[model.active];
+      Object.keys(changes).forEach(function (k) {
+        var p = t.params.filter(function (x) { return x.id === k; })[0];
+        if (p) set[k] = PL.route.coerce(p, String(changes[k]));
+      });
+      ctl.render(); cmp.updateDiff();
+      schedule(done ? 0 : 60);
+    };
+
+    stage.onDragEnd = function () { schedule(0); };   // re-fit the view once the drag is over
+
+    function syncHash() {
+      var h = PL.route.hash(t, model.sets, view, scene.options);
+      if (h !== location.hash) history.replaceState(null, "", h);
+    }
+
+    function schedule(ms) {
+      clearTimeout(debounce);
+      debounce = setTimeout(run, ms);
     }
 
     function run() {
-      var q = Object.keys(state.params).map(function (k) {
-        var v = state.params[k];
-        return k + "=" + encodeURIComponent(typeof v === "boolean" ? (v ? "1" : "0") : v);
-      }).join("&");
-      fetchJSON("/api/run?topic=" + t.id + "&" + q).then(function (res) {
-        state.result = res;
-        state.frame = 0; state.fprog = 0;
-        readBox.innerHTML = "";
-        readBox.appendChild(PL.ui.readouts(res.readouts));
-        fpanel.update(res.formula);
-        PL.scenes[t.id].init(ctx, canvas.width, canvas.height, res, state.params);
-        playNow();
+      var my = ++token, sets = model.sets.slice();
+      syncHash();
+      Promise.all(sets.map(function (p) {
+        return fetchJSON("/api/run?topic=" + t.id + "&" + query(p));
+      })).then(function (out) {
+        if (my !== token) return;                 // a newer request superseded this one
+        var runs = out.map(function (res, i) {
+          return { result: res, params: res.params, color: U.RUN_COLORS[i],
+                   label: sets.length > 1 ? U.RUN_LABELS[i] : "" };
+        });
+        results.update(runs, cmp.noun);
+        learn.update(runs.length > 1 ? runs.map(function (r) {
+          return { label: r.label, color: r.color, formula: r.result.formula };
+        }) : runs[0].result.formula);
+        var seek = seekTo;
+        seekTo = null;                            // only the first run of a deep link seeks
+        player.load(runs, view, { seek: seek, keepView: true });
+        setReady(true);
       }).catch(function (e) {
-        readBox.innerHTML = '<div class="blurb">could not run: ' + e.message + "</div>";
+        if (my !== token) return;
+        results.error(e.message);
       });
     }
 
-    function drawFrame(dt) {
-      if (!state.result) return;
-      PL.scenes[t.id].render(ctx, canvas.width, canvas.height,
-                             state.frame, dt, state.result, state.params);
-    }
+    this.destroy = function () {
+      token++;
+      clearTimeout(debounce);
+      player.stop();
+    };
 
-    function step(ts) {
-      if (!state.playing) return;
-      if (state.lastTs == null) state.lastTs = ts;
-      var dt = Math.min(0.05, (ts - state.lastTs) / 1000);
-      state.lastTs = ts;
-      var frames = state.result.frames;
-      if (state.frame >= frames.length - 1) { playNow(false); drawFrame(0); state.frame = 0; return; }
-      var speed = (SPEED[t.id] || 1);
-      state.fprog += speed * dt / 0.05;
-      var adv = Math.floor(state.fprog);
-      state.fprog -= adv;
-      state.frame = Math.min(frames.length - 1, state.frame + adv);
-      drawFrame(dt);
-      state.raf = requestAnimationFrame(step);
-    }
-
-    function playNow(on) {
-      if (on === undefined) on = true;
-      state.playing = on;
-      state.lastTs = null;
-      play.textContent = on ? "⏸ pause" : "▶ run";
-      if (on) { cancelAnimationFrame(state.raf); state.raf = requestAnimationFrame(step); }
-    }
-
-    play.addEventListener("click", function () { playNow(!state.playing); });
-    reset.addEventListener("click", function () {
-      state.frame = 0; state.fprog = 0;
-      if (PL.scenes[t.id].init) PL.scenes[t.id].init(ctx, canvas.width, canvas.height, state.result, state.params);
-      playNow();
-    });
-
-    buildControls();
+    cmp.render();
+    ctl.render();
     run();
-    document.title = "physlab - " + t.title;
+    that.model = model;
+    PL.current = { topic: t, model: model, stage: stage, player: player };   // for devtools and tests
   }
 
   fetchJSON("/api/topics").then(function (data) {
     state.topics = data.topics;
-    showPicker();
+    PL.topics = data.topics;
+    window.addEventListener("hashchange", route);
+    route();
   }).catch(function (e) {
     app.innerHTML = '<div class="loading">could not load topics: ' + e.message + "</div>";
   });

@@ -4,7 +4,7 @@
    "expr": "I = V / (R + r)",
    "values": {
     "I": 0.1188,
-    "R": 50.5,
+    "R": 50.0,
     "V": 6.0,
     "r": 0.5
    }
@@ -16,319 +16,481 @@
     "P": 0.282,
     "R_lamp": 20.0
    }
+  },
+  {
+   "expr": "T^4 - T_room^4 ~ P",
+   "values": {
+    "P/P_rated": 0.157,
+    "T": 1699,
+    "lm": 0.1
+   }
   }
  ],
  "frames": [
   {
    "brightness": 0.0,
+   "color": "#ff0000",
    "current": 0.1188118811881188,
    "energy": 0.0,
+   "filament_k": 293.1,
+   "lumens": 0.0,
    "t": 0.0
   },
   {
-   "brightness": 0.007048345086879937,
+   "brightness": 0.0,
+   "color": "#ff0000",
    "current": 0.1188118811881188,
    "energy": 0.014257425742574256,
+   "filament_k": 468.7,
+   "lumens": 0.0,
    "t": 0.02
   },
   {
-   "brightness": 0.013216868650324709,
+   "brightness": 1.5e-05,
+   "color": "#ff0000",
    "current": 0.1188118811881188,
    "energy": 0.028514851485148512,
+   "filament_k": 622.3,
+   "lumens": 0.0,
    "t": 0.04
   },
   {
-   "brightness": 0.018615395890939294,
+   "brightness": 0.000128,
+   "color": "#ff0000",
    "current": 0.1188118811881188,
    "energy": 0.04277227722772277,
+   "filament_k": 756.8,
+   "lumens": 0.0,
    "t": 0.06
   },
   {
-   "brightness": 0.023340042894051727,
+   "brightness": 0.000501,
+   "color": "#ff0e00",
    "current": 0.1188118811881188,
    "energy": 0.057029702970297025,
+   "filament_k": 874.5,
+   "lumens": 0.0,
    "t": 0.08
   },
   {
-   "brightness": 0.027474927893071953,
+   "brightness": 0.00128,
+   "color": "#ff2b00",
    "current": 0.1188118811881188,
    "energy": 0.07128712871287128,
+   "filament_k": 977.4,
+   "lumens": 0.0,
    "t": 0.1
   },
   {
-   "brightness": 0.031093668921525375,
+   "brightness": 0.002522,
+   "color": "#ff3b00",
    "current": 0.1188118811881188,
    "energy": 0.08554455445544554,
+   "filament_k": 1067.6,
+   "lumens": 0.0,
    "t": 0.12
   },
   {
-   "brightness": 0.03426069451815385,
+   "brightness": 0.004199,
+   "color": "#ff4600",
    "current": 0.1188118811881188,
    "energy": 0.09980198019801981,
+   "filament_k": 1146.4,
+   "lumens": 0.0001,
    "t": 0.14
   },
   {
-   "brightness": 0.03703239082104916,
+   "brightness": 0.006227,
+   "color": "#ff4e00",
    "current": 0.1188118811881188,
    "energy": 0.11405940594059405,
+   "filament_k": 1215.5,
+   "lumens": 0.0003,
    "t": 0.16
   },
   {
-   "brightness": 0.039458105473833105,
+   "brightness": 0.008501,
+   "color": "#ff5500",
    "current": 0.1188118811881188,
    "energy": 0.12831683168316832,
+   "filament_k": 1275.9,
+   "lumens": 0.0009,
    "t": 0.18
   },
   {
-   "brightness": 0.04158102621756116,
+   "brightness": 0.010916,
+   "color": "#ff5b00",
    "current": 0.1188118811881188,
    "energy": 0.14257425742574256,
+   "filament_k": 1328.8,
+   "lumens": 0.0018,
    "t": 0.2
   },
   {
-   "brightness": 0.04343894981091475,
+   "brightness": 0.013382,
+   "color": "#ff5f00",
    "current": 0.1188118811881188,
    "energy": 0.15683168316831683,
+   "filament_k": 1375.0,
+   "lumens": 0.0034,
    "t": 0.22
   },
   {
-   "brightness": 0.04506495496863822,
+   "brightness": 0.015826,
+   "color": "#ff6300",
    "current": 0.1188118811881188,
    "energy": 0.17108910891089107,
+   "filament_k": 1415.5,
+   "lumens": 0.0056,
    "t": 0.24
   },
   {
-   "brightness": 0.04648799129930401,
+   "brightness": 0.018194,
+   "color": "#ff6600",
    "current": 0.1188118811881188,
    "energy": 0.18534653465346534,
+   "filament_k": 1451.0,
+   "lumens": 0.0084,
    "t": 0.26
   },
   {
-   "brightness": 0.0477333947279315,
+   "brightness": 0.020447,
+   "color": "#ff6900",
    "current": 0.1188118811881188,
    "energy": 0.19960396039603961,
+   "filament_k": 1482.0,
+   "lumens": 0.012,
    "t": 0.28
   },
   {
-   "brightness": 0.04882333858011088,
+   "brightness": 0.02256,
+   "color": "#ff6b00",
    "current": 0.1188118811881188,
    "energy": 0.21386138613861386,
+   "filament_k": 1509.1,
+   "lumens": 0.0161,
    "t": 0.3
   },
   {
-   "brightness": 0.04977722835879316,
+   "brightness": 0.024521,
+   "color": "#ff6d00",
    "current": 0.1188118811881188,
    "energy": 0.2281188118811881,
+   "filament_k": 1532.9,
+   "lumens": 0.0206,
    "t": 0.32
   },
   {
-   "brightness": 0.05061204724240368,
+   "brightness": 0.026323,
+   "color": "#ff6f00",
    "current": 0.1188118811881188,
    "energy": 0.24237623762376237,
+   "filament_k": 1553.7,
+   "lumens": 0.0255,
    "t": 0.34
   },
   {
-   "brightness": 0.05134265845557282,
+   "brightness": 0.027967,
+   "color": "#ff7000",
    "current": 0.1188118811881188,
    "energy": 0.25663366336633664,
+   "filament_k": 1571.9,
+   "lumens": 0.0306,
    "t": 0.36
   },
   {
-   "brightness": 0.051982069895932057,
+   "brightness": 0.029458,
+   "color": "#ff7200",
    "current": 0.1188118811881188,
    "energy": 0.27089108910891085,
+   "filament_k": 1587.8,
+   "lumens": 0.0358,
    "t": 0.38
   },
   {
-   "brightness": 0.05254166572842528,
+   "brightness": 0.030802,
+   "color": "#ff7300",
    "current": 0.1188118811881188,
    "energy": 0.2851485148514851,
+   "filament_k": 1601.8,
+   "lumens": 0.0409,
    "t": 0.4
   },
   {
-   "brightness": 0.05303140907047098,
+   "brightness": 0.032009,
+   "color": "#ff7400",
    "current": 0.1188118811881188,
    "energy": 0.2994059405940594,
+   "filament_k": 1614.0,
+   "lumens": 0.0459,
    "t": 0.42
   },
   {
-   "brightness": 0.05346001937660829,
+   "brightness": 0.033089,
+   "color": "#ff7400",
    "current": 0.1188118811881188,
    "energy": 0.31366336633663366,
+   "filament_k": 1624.6,
+   "lumens": 0.0507,
    "t": 0.44
   },
   {
-   "brightness": 0.053835127680806505,
+   "brightness": 0.034053,
+   "color": "#ff7500",
    "current": 0.1188118811881188,
    "energy": 0.32792079207920793,
+   "filament_k": 1634.0,
+   "lumens": 0.0553,
    "t": 0.46
   },
   {
-   "brightness": 0.05416341246039222,
+   "brightness": 0.03491,
+   "color": "#ff7600",
    "current": 0.1188118811881188,
    "energy": 0.34217821782178215,
+   "filament_k": 1642.1,
+   "lumens": 0.0596,
    "t": 0.48
   },
   {
-   "brightness": 0.05445071854053353,
+   "brightness": 0.035671,
+   "color": "#ff7600",
    "current": 0.1188118811881188,
    "energy": 0.3564356435643564,
+   "filament_k": 1649.3,
+   "lumens": 0.0636,
    "t": 0.5
   },
   {
-   "brightness": 0.05470216115627203,
+   "brightness": 0.036345,
+   "color": "#ff7700",
    "current": 0.1188118811881188,
    "energy": 0.3706930693069307,
+   "filament_k": 1655.6,
+   "lumens": 0.0672,
    "t": 0.52
   },
   {
-   "brightness": 0.054922217024836725,
+   "brightness": 0.036941,
+   "color": "#ff7700",
    "current": 0.1188118811881188,
    "energy": 0.38495049504950496,
+   "filament_k": 1661.0,
+   "lumens": 0.0706,
    "t": 0.54
   },
   {
-   "brightness": 0.05511480404970337,
+   "brightness": 0.037468,
+   "color": "#ff7700",
    "current": 0.1188118811881188,
    "energy": 0.39920792079207923,
+   "filament_k": 1665.8,
+   "lumens": 0.0737,
    "t": 0.56
   },
   {
-   "brightness": 0.05528335107546052,
+   "brightness": 0.037932,
+   "color": "#ff7800",
    "current": 0.1188118811881188,
    "energy": 0.41346534653465344,
+   "filament_k": 1670.0,
+   "lumens": 0.0764,
    "t": 0.58
   },
   {
-   "brightness": 0.055430858935407216,
+   "brightness": 0.038342,
+   "color": "#ff7800",
    "current": 0.1188118811881188,
    "energy": 0.4277227722772277,
+   "filament_k": 1673.7,
+   "lumens": 0.0789,
    "t": 0.6
   },
   {
-   "brightness": 0.0555599538787817,
+   "brightness": 0.038703,
+   "color": "#ff7800",
    "current": 0.1188118811881188,
    "energy": 0.441980198019802,
+   "filament_k": 1676.9,
+   "lumens": 0.0812,
    "t": 0.62
   },
   {
-   "brightness": 0.055672934328846395,
+   "brightness": 0.03902,
+   "color": "#ff7800",
    "current": 0.1188118811881188,
    "energy": 0.4562376237623762,
+   "filament_k": 1679.7,
+   "lumens": 0.0832,
    "t": 0.64
   },
   {
-   "brightness": 0.05577181180431649,
+   "brightness": 0.039299,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.47049504950495047,
+   "filament_k": 1682.2,
+   "lumens": 0.085,
    "t": 0.66
   },
   {
-   "brightness": 0.05585834673270224,
+   "brightness": 0.039544,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.48475247524752474,
+   "filament_k": 1684.4,
+   "lumens": 0.0866,
    "t": 0.68
   },
   {
-   "brightness": 0.05593407979319074,
+   "brightness": 0.039759,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.499009900990099,
+   "filament_k": 1686.2,
+   "lumens": 0.088,
    "t": 0.7
   },
   {
-   "brightness": 0.05600035934709974,
+   "brightness": 0.039948,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.5132673267326733,
+   "filament_k": 1687.9,
+   "lumens": 0.0893,
    "t": 0.72
   },
   {
-   "brightness": 0.05605836544427896,
+   "brightness": 0.040114,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.5275247524752475,
+   "filament_k": 1689.3,
+   "lumens": 0.0904,
    "t": 0.74
   },
   {
-   "brightness": 0.05610913083287203,
+   "brightness": 0.040259,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.5417821782178217,
+   "filament_k": 1690.6,
+   "lumens": 0.0914,
    "t": 0.76
   },
   {
-   "brightness": 0.056153559346499536,
+   "brightness": 0.040387,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.556039603960396,
+   "filament_k": 1691.7,
+   "lumens": 0.0923,
    "t": 0.78
   },
   {
-   "brightness": 0.05619244199623106,
+   "brightness": 0.040499,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.5702970297029702,
+   "filament_k": 1692.7,
+   "lumens": 0.093,
    "t": 0.8
   },
   {
-   "brightness": 0.056226471053849786,
+   "brightness": 0.040597,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.5845544554455445,
+   "filament_k": 1693.5,
+   "lumens": 0.0937,
    "t": 0.82
   },
   {
-   "brightness": 0.05625625237714987,
+   "brightness": 0.040683,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.5988118811881188,
+   "filament_k": 1694.3,
+   "lumens": 0.0943,
    "t": 0.84
   },
   {
-   "brightness": 0.05628231619670789,
+   "brightness": 0.040758,
+   "color": "#ff7900",
    "current": 0.1188118811881188,
    "energy": 0.6130693069306931,
+   "filament_k": 1694.9,
+   "lumens": 0.0948,
    "t": 0.86
   },
   {
-   "brightness": 0.05630512655617742,
+   "brightness": 0.040824,
+   "color": "#ff7a00",
    "current": 0.1188118811881188,
    "energy": 0.6273267326732673,
+   "filament_k": 1695.5,
+   "lumens": 0.0953,
    "t": 0.88
   },
   {
-   "brightness": 0.05632508957418293,
+   "brightness": 0.040882,
+   "color": "#ff7a00",
    "current": 0.1188118811881188,
    "energy": 0.6415841584158416,
+   "filament_k": 1696.0,
+   "lumens": 0.0957,
    "t": 0.9
   },
   {
-   "brightness": 0.05634256067490894,
+   "brightness": 0.040932,
+   "color": "#ff7a00",
    "current": 0.1188118811881188,
    "energy": 0.6558415841584159,
+   "filament_k": 1696.4,
+   "lumens": 0.096,
    "t": 0.92
   },
   {
-   "brightness": 0.05635785091611864,
+   "brightness": 0.040976,
+   "color": "#ff7a00",
    "current": 0.1188118811881188,
    "energy": 0.6700990099009901,
+   "filament_k": 1696.8,
+   "lumens": 0.0964,
    "t": 0.94
   },
   {
-   "brightness": 0.056371232527267105,
+   "brightness": 0.041015,
+   "color": "#ff7a00",
    "current": 0.1188118811881188,
    "energy": 0.6843564356435643,
+   "filament_k": 1697.1,
+   "lumens": 0.0966,
    "t": 0.96
   },
   {
-   "brightness": 0.056382943756310054,
+   "brightness": 0.041049,
+   "color": "#ff7a00",
    "current": 0.1188118811881188,
    "energy": 0.6986138613861386,
+   "filament_k": 1697.4,
+   "lumens": 0.0969,
    "t": 0.98
   },
   {
-   "brightness": 0.05639319311150164,
+   "brightness": 0.041288,
+   "color": "#ff7a00",
    "current": 0.1188118811881188,
    "energy": 0.7128712871287128,
+   "filament_k": 1699.5,
+   "lumens": 0.0986,
    "t": 1.0
   }
  ],
+ "notes": [],
  "readouts": [
   {
-   "label": "Current",
+   "label": "Current (same everywhere in the loop)",
    "unit": "A",
    "value": 0.1188
   },
@@ -338,14 +500,38 @@
    "value": 50.5
   },
   {
+   "label": "Voltage across each lamp",
+   "unit": "V (rated 6 V)",
+   "value": 2.376
+  },
+  {
    "label": "Lamp power (each)",
-   "unit": "W",
+   "unit": "W (rated 1.80 W)",
    "value": 0.282
+  },
+  {
+   "label": "Filament temperature",
+   "unit": "K",
+   "value": 1699
+  },
+  {
+   "label": "Light from each lamp",
+   "unit": "lm",
+   "value": 0.1
   },
   {
    "label": "Battery terminal voltage",
    "unit": "V",
    "value": 5.941
+  },
+  {
+   "label": "Real electron drift speed",
+   "unit": "mm/s (0.5 mm\u00b2 copper wire)",
+   "value": 0.0175
   }
- ]
+ ],
+ "viz": {
+  "drift_mm_s": 0.017469150402577092,
+  "lamp_v_rated": 6.0
+ }
 }

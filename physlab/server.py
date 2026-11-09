@@ -1,8 +1,25 @@
 """Static + API server. Loopback-only in tests by construction.
 
-GET /                     -> www/index.html
-GET /api/topics           -> topic registry JSON
-GET /api/run?topic=ID&... -> validated params -> frames + formulas
+GET  /                              -> www/index.html
+GET  /api/topics                    -> topic registry JSON
+GET  /api/run?topic=ID&...          -> validated params -> frames + formulas
+
+Quiz (storage: physlab/quizdb.py, SQLite):
+GET  /api/quiz?player=P             -> all questions by topic + P's progress
+GET  /api/quiz/question?id=Q&player=P  one question (solution only once solved/revealed)
+GET  /api/quiz/history?player=P     -> P's answers, newest first
+GET  /api/quiz/players              -> recent players on this machine
+POST /api/quiz/player  {name}       -> new player
+POST /api/quiz/answer  {player, question, inputs}
+                                    -> runs the experiment, grades, records; returns
+                                       the run so the browser can play it
+POST /api/quiz/reveal  {player, question}   (after 2 wrong tries, no points)
+
+Sandbox (physlab/sandbox.py):
+GET  /api/sandbox                   -> catalogs, fields, presets and defaults per topic
+POST /api/sandbox/run  {topic, world}
+                                    -> strictly validated world -> {world, runs: [{label,
+                                       result}], notes}; 400 with a reason otherwise
 """
 
 import json
@@ -12,12 +29,15 @@ import posixpath
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
-from . import TOPICS, spec
-from .topics import circuits, motion, heat
+from . import TOPICS, spec, quiz, sandbox
+from .quizdb import QuizDB
+from .topics import circuits, motion, heat, buoyancy, waves, pendulum, optics, pressure, energy
 
-RUNNERS = {"circuits": circuits.run, "motion": motion.run, "heat": heat.run}
+RUNNERS = {"circuits": circuits.run, "motion": motion.run, "heat": heat.run,
+           "buoyancy": buoyancy.run, "waves": waves.run, "pendulum": pendulum.run,
+           "optics": optics.run, "pressure": pressure.run, "energy": energy.run}
 WWW = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "www")
-MAX_BODY = 0  # GET-only API
+MAX_BODY = 16 * 1024   # POST bodies (quiz answers, sandbox worlds) are small JSON objects
 
 
 def _bad(handler, code, msg):
@@ -82,10 +102,131 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    # ---------------- quiz ----------------
+    def _quiz_get(self, path, q):
+        one = lambda k: (q.get(k) or [None])[0]
+        db = QuizDB()
+        try:
+            pid = one("player")
+            player = db.player(pid) if pid else None
+            if path == "/api/quiz":
+                mods = []
+                for t in TOPICS:
+                    qs = [x for x in quiz.QUESTIONS if x["topic"] == t["id"]]
+                    if not qs:
+                        continue
+                    items = []
+                    for x in sorted(qs, key=lambda x: quiz.LEVELS.index(x["difficulty"])):
+                        st = db.progress(player["id"], x["id"]) if player else None
+                        items.append({"id": x["id"], "difficulty": x["difficulty"], "title": x["title"],
+                                      "points": x["points"], "progress": st})
+                    mods.append({"topic": t["id"], "title": t["title"], "icon": t["icon"], "questions": items})
+                total = sum(x["points"] for x in quiz.QUESTIONS)
+                return self._json({"modules": mods, "player": player, "max_score": total,
+                                   "count": len(quiz.QUESTIONS)})
+            if path == "/api/quiz/question":
+                qd = quiz.BY_ID.get(one("id") or "")
+                if not qd:
+                    return _bad(self, 404, "unknown question")
+                out = quiz.public(qd)
+                if player:
+                    st = db.progress(player["id"], qd["id"])
+                    out["progress"] = st
+                    if st["attempts"]:
+                        out["explanation"] = qd["explanation"]
+                    if st["solved"] or st["revealed"]:
+                        out["solution"] = qd["solution"]
+                return self._json(out)
+            if path == "/api/quiz/history":
+                if not player:
+                    return _bad(self, 404, "unknown player")
+                hist = db.history(player["id"])
+                for h in hist:                            # the unit of the measured outcome
+                    qd = quiz.BY_ID.get(h["question_id"])
+                    h["unit"] = quiz.METRICS[qd["goal"]["metric"]]["unit"] if qd else ""
+                return self._json({"player": player, "history": hist})
+            if path == "/api/quiz/players":
+                return self._json({"players": db.players()})
+            return _bad(self, 404, "not found")
+        finally:
+            db.close()
+
+    def _read_json(self):
+        try:
+            n = int(self.headers.get("Content-Length", ""))
+        except ValueError:
+            return None, "Content-Length required"
+        if n < 0 or n > MAX_BODY:
+            return None, "body too large"
+        try:
+            body = json.loads(self.rfile.read(n).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return None, "body must be JSON"
+        if not isinstance(body, dict):
+            return None, "body must be a JSON object"
+        return body, None
+
+    def do_POST(self):
+        path = urlparse(self.path).path
+        if path == "/api/sandbox/run":
+            body, err = self._read_json()
+            if err:
+                return _bad(self, 400, err)
+            topic = body.get("topic")
+            if not isinstance(topic, str) or topic not in sandbox.SANDBOX:
+                return _bad(self, 400, "no sandbox for that topic")
+            world, err = sandbox.validate(topic, body.get("world", {}))
+            if err:
+                return _bad(self, 400, err)
+            return self._json({"topic": topic, "world": world, **sandbox.run(topic, world)})
+        if path not in ("/api/quiz/player", "/api/quiz/answer", "/api/quiz/reveal"):
+            return _bad(self, 404, "not found")
+        body, err = self._read_json()
+        if err:
+            return _bad(self, 400, err)
+        db = QuizDB()
+        try:
+            if path == "/api/quiz/player":
+                try:
+                    return self._json({"player": db.create_player(body.get("name"))})
+                except ValueError as e:
+                    return _bad(self, 400, str(e))
+            player = db.player(body.get("player"))
+            if not player:
+                return _bad(self, 404, "unknown player")
+            qd = quiz.BY_ID.get(body.get("question") if isinstance(body.get("question"), str) else "")
+            if not qd:
+                return _bad(self, 404, "unknown question")
+            if path == "/api/quiz/reveal":
+                try:
+                    db.reveal(player["id"], qd)
+                except ValueError as e:
+                    return _bad(self, 400, str(e))
+                return self._json({"solution": qd["solution"], "explanation": qd["explanation"],
+                                   "progress": db.progress(player["id"], qd["id"])})
+            inputs, err = quiz.check_inputs(qd, body.get("inputs"))
+            if err:
+                return _bad(self, 400, err)
+            graded = quiz.grade(qd, inputs)
+            pts = db.record(player["id"], qd, inputs, graded)
+            st = db.progress(player["id"], qd["id"])
+            return self._json({
+                "correct": graded["correct"], "value": graded["value"], "message": graded["message"],
+                "points": pts, "score": db.score(player["id"]), "progress": st,
+                "explanation": qd["explanation"],
+                "solution": qd["solution"] if (st["solved"] or st["revealed"]) else None,
+                "goal": quiz.public(qd)["goal"], "run": graded["result"]})
+        finally:
+            db.close()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/topics":
             return self._json({"topics": TOPICS})
+        if parsed.path == "/api/sandbox":
+            return self._json({"sandbox": sandbox.catalog_view()})
+        if parsed.path.startswith("/api/quiz"):
+            return self._quiz_get(parsed.path, parse_qs(parsed.query))
         if parsed.path == "/api/run":
             q = parse_qs(parsed.query)
             tid = q.pop("topic", [None])[0]

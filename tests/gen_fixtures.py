@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from physlab import spec
 from physlab.server import validate
-from physlab.topics import circuits, motion, heat
+from physlab.topics import circuits, motion, heat, buoyancy, waves, pendulum, optics, pressure, energy
 
 FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 # optional argv[1]: alternate output dir (used by the regen test)
@@ -21,8 +21,19 @@ GOLDEN = {
     "heat": {"material_a": "water", "mass_a": 1.0, "temp_a": 90.0,
              "material_b": "iron", "mass_b": 2.0, "temp_b": 20.0,
              "ambient": 25.0, "loss": 0.0},
+    "buoyancy": {"shape": "sphere", "material": "ice", "size": 10.0, "fluid": "seawater",
+                 "g": 9.81, "start": 10.0},
+    "waves": {"f": 1.25, "amplitude": 2.0, "tension": 20.0, "mu": 200.0, "length": 2.0,
+              "end": "free", "damping": 1.0},
+    "pendulum": {"length": 0.8, "amplitude": 45.0, "mass": 0.5, "g": 9.81, "drag": 0.002},
+    "optics": {"kind": "converging", "material": "flint", "radius": 15.0, "d_o": 25.0, "h_o": 3.0},
+    "pressure": {"force": 120.0, "d1": 2.5, "d2": 20.0, "mass": 500.0, "stroke": 20.0, "fluid": "water"},
+    "energy": {"track": "hill", "object": "solid_ball", "height": 6.0, "mass": 10.0, "friction": 0.02,
+               "g": 9.81},
 }
-RUNNERS = {"circuits": circuits.run, "motion": motion.run, "heat": heat.run}
+RUNNERS = {"circuits": circuits.run, "motion": motion.run, "heat": heat.run,
+           "buoyancy": buoyancy.run, "waves": waves.run, "pendulum": pendulum.run,
+           "optics": optics.run, "pressure": pressure.run, "energy": energy.run}
 
 
 def main():
