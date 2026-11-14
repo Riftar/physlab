@@ -6,6 +6,11 @@
 Wind only acts THROUGH drag: with k = 0 the air can blow all it likes and
 the ball does not care (a teaching point the scene makes visible).
 
+Launch height h (optional, default 0): the ball leaves from h metres above
+the ground and lands at ground level, so with no air it flies for
+    t = (v0 sin a + sqrt((v0 sin a)^2 + 2 g h)) / g,   x = v0 cos a * t
+(the game's Fan Jump throws a wooden ball off a lip 2.5 m above a cart).
+
 Heun (trapezoidal, 2nd order) steps at fixed dt: exact for constant
 gravity, 2nd-order accurate with drag. Same validated params ->
 byte-equal frames. With drag 0 the path matches the closed form to
@@ -48,27 +53,36 @@ def _frame(t, x, y, vx, vy, p):
             "fdx": round(fx, 4), "fdy": round(fy, 4)}
 
 
+def flight_time(vy, g, h=0.0):
+    """No-air flight time from height h down to the ground."""
+    if h == 0.0:
+        return 2.0 * vy / g
+    return (vy + math.sqrt(vy * vy + 2.0 * g * h)) / g
+
+
 def vacuum_path(p):
     """Closed-form no-air parabola for the same launch: [[x, y], ...]."""
     rad = math.radians(p["angle"])
+    h = p.get("height", 0.0)
     vx, vy = p["v0"] * math.cos(rad), p["v0"] * math.sin(rad)
-    t_f = 2.0 * vy / p["g"]
+    t_f = flight_time(vy, p["g"], h)
     pts = []
     for i in range(VACUUM_POINTS + 1):
         t = t_f * i / VACUUM_POINTS
-        pts.append([round(vx * t, 4), round(max(0.0, vy * t - 0.5 * p["g"] * t * t), 4)])
+        pts.append([round(vx * t, 4), round(max(0.0, h + vy * t - 0.5 * p["g"] * t * t), 4)])
     return pts
 
 
 def run(p):
     rad = math.radians(p["angle"])
+    h = p.get("height", 0.0)
     vx, vy = p["v0"] * math.cos(rad), p["v0"] * math.sin(rad)
-    x, y, t = 0.0, 0.0, 0.0
-    frames = [_frame(0.0, 0.0, 0.0, vx, vy, p)]
-    peak = 0.0
+    x, y, t = 0.0, h, 0.0
+    frames = [_frame(0.0, 0.0, h, vx, vy, p)]
+    peak = h
     max_drag = math.hypot(*drag_force(vx, vy, p))
     landed = False
-    t_vac = 2.0 * vy / p["g"]
+    t_vac = flight_time(vy, p["g"], h)
     record_every = max(RECORD_MIN, min(RECORD_MAX, int(t_vac / FRAMES_PER_FLIGHT / DT)))
     n = 0
     while n * DT < MAX_T:
@@ -96,7 +110,7 @@ def run(p):
             break
     last = frames[-1]
     speed = math.hypot(last["vx"], last["vy"])
-    ideal = p["v0"] * p["v0"] * math.sin(2.0 * rad) / p["g"]
+    ideal = p["v0"] * p["v0"] * math.sin(2.0 * rad) / p["g"] if h == 0.0 else vx * t_vac
     weight = p["mass"] * p["g"]
     return {
         "frames": frames,
@@ -109,7 +123,8 @@ def run(p):
             {"label": "Flight time", "value": last["t"], "unit": "s"},
             {"label": "Peak height", "value": round(peak, 3), "unit": "m"},
             {"label": "Landing speed", "value": round(speed, 3), "unit": "m/s"},
-            {"label": "Distance with no air", "value": round(ideal, 3), "unit": "m"},
+            {"label": "Distance with no air", "value": round(ideal, 3),
+             "unit": "m" + (" (launched %g m up)" % h if h else "")},
             {"label": "Biggest drag force", "value": round(max_drag, 3),
              "unit": "N (%.1f x weight)" % (max_drag / weight)},
         ],
@@ -120,6 +135,9 @@ def run(p):
             {"expr": "Range = v0^2 * sin(2*angle) / g",
              "values": {"v0": round(p["v0"], 2), "angle": round(p["angle"], 1),
                         "g": round(p["g"], 2),
-                        "Range": round(ideal, 3) if p["drag"] == 0.0 else None}},
+                        "Range": round(ideal, 3) if p["drag"] == 0.0 and h == 0.0 else None}},
+            {"expr": "x = v0*cos(a) * (v0*sin(a) + sqrt((v0*sin(a))^2 + 2*g*h)) / g",
+             "values": {"h": h, "t_flight": round(t_vac, 3),
+                        "x": round(ideal, 3) if p["drag"] == 0.0 else None}},
         ],
     }

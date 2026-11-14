@@ -87,6 +87,50 @@ class Track(object):
         return 0.0 if self.kind == "halfpipe" else 0.5
 
 
+class CamelTrack(Track):
+    """A small machine-sized track: a drop from `top` metres, then ONE hump of
+    height `hump` whose crest has a FIXED radius of curvature R (a track-kit
+    piece), then a run-out:
+
+        y = base + (top - base) exp(-x^2 / 2 s0^2) + a exp(-(x - xc)^2 / 2 s^2),
+        a = hump - base,  s = sqrt(R a)   ->   y''(crest) = -1/R
+
+    Over the crest the track can only push, N = m (g - v^2/R) >= 0, so the
+    object stays on while v <= sqrt(g R), and a rolling ball's crest speed
+    comes from v^2 = 2 g (h - hump) / (1 + k). Released near the top (x =
+    START_X), it starts moving at once."""
+
+    R = 0.8
+    BASE, XC, S0, X1 = 0.10, 3.5, 0.9, 6.5
+    START_X = 0.25
+
+    def __init__(self, top, hump, R=None):
+        self.kind = "camel"
+        self.R = R or CamelTrack.R
+        self.top, self.hump = top, hump
+        self.x0, self.x1 = 0.0, self.X1
+        self.drop = top - self.BASE
+        self.a = max(hump - self.BASE, 1e-6)
+        self.s = math.sqrt(self.R * self.a)
+
+    def eval(self, x):
+        s0, xc = self.S0, self.XC
+        g1 = math.exp(-x * x / (2 * s0 ** 2))
+        u = x - xc
+        g2 = math.exp(-u * u / (2 * self.s ** 2))
+        y = self.BASE + self.drop * g1 + self.a * g2
+        d1 = self.drop * g1 * (-x / s0 ** 2) + self.a * g2 * (-u / self.s ** 2)
+        d2 = (self.drop * g1 * (x * x / s0 ** 4 - 1 / s0 ** 2)
+              + self.a * g2 * (u * u / self.s ** 4 - 1 / self.s ** 2))
+        return y, d1, d2
+
+    def start_x(self, h=None):
+        return self.START_X
+
+    def lowest(self, n=600):
+        return min(self.f(self.x0 + (self.x1 - self.x0) * i / n) for i in range(n + 1))
+
+
 class SplineTrack(Track):
     """A track the student shapes: a natural cubic spline through control
     points (x_i, y_i). Natural splines are C2, so the curvature - and the
@@ -169,6 +213,14 @@ def speed_after_drop(g, drop, k):
     return math.sqrt(2.0 * g * max(drop, 0.0) / (1.0 + k))
 
 
+def spring_launch_speed(k_spring, x, m, angle_deg, g=G_DEFAULT):
+    """Speed a compressed spring gives a ball pushed x metres up a barrel at
+    angle_deg:  1/2 k x^2 = 1/2 m v^2 + m g x sin(angle)   (the spring also
+    lifts the ball up the barrel). 0 if the spring can't even do that."""
+    e = 0.5 * k_spring * x * x - m * g * x * math.sin(math.radians(angle_deg))
+    return math.sqrt(2.0 * e / m) if e > 0 else 0.0
+
+
 def normal_force(m, g, slope, curv, v):
     """N = m (g cos(phi) + kappa v^2), kappa = y'' / (1 + y'^2)^(3/2)."""
     sec = math.sqrt(1.0 + slope * slope)
@@ -190,15 +242,26 @@ def sticks(mu, slope):
 WALL_E = 0.5          # the padded walls at both track ends bounce back half the speed
 
 
+CAMEL_BALL_R = 0.05     # m: how big the camel track draws a ball (the track is only ~1.5 m tall)
+
+
 def run(p):
+    if p["track"] == "camel":
+        track = CamelTrack(p["height"], p["hump"])
+        return simulate(track, track.start_x(), p["mass"], K[p["object"]], p["friction"], p["g"],
+                        kind="camel", obj=p["object"],
+                        viz_extra={"ball_r": CAMEL_BALL_R, "hump": p["hump"], "crest": [track.XC, p["hump"]],
+                                   "R": track.R})
     track = Track(p["track"])
     return simulate(track, track.start_x(p["height"]), p["mass"], K[p["object"]], p["friction"], p["g"],
                     kind=p["track"], obj=p["object"])
 
 
-def simulate(track, x, m, k, mu, g, kind, obj, label=None, viz_extra=None):
+def simulate(track, x, m, k, mu, g, kind, obj, label=None, viz_extra=None, stop_x=None):
     """Release an object (mass m, spin share k) at x on `track` with
-    friction / rolling resistance mu. Returns the full run result."""
+    friction / rolling resistance mu. Returns the full run result.
+    stop_x: end the run as soon as the object rolls past this x (a machine
+    that only needs to know when it arrives)."""
     y0 = track.f(x)
     x_start = x
     e0 = m * g * y0
@@ -277,6 +340,9 @@ def simulate(track, x, m, k, mu, g, kind, obj, label=None, viz_extra=None):
 
         y, d1, d2 = track.eval(x)
         n = normal_force(m, g, d1, d2, v)
+        if stop_x is not None and x >= stop_x:
+            frames.append(record(t, x, y, v, d1, n, False))
+            break
         if t >= next_rec - 1e-12 or at_rest:
             frames.append(record(t, x, y, v, d1, n, False))
             next_rec += RECORD

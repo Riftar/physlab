@@ -18,7 +18,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from physlab.server import Handler
 
 PORT = 8641
-READY = ("circuits", "motion", "heat", "buoyancy", "waves", "pendulum", "optics", "pressure", "energy")
+READY = ("circuits", "motion", "heat", "buoyancy", "waves", "pendulum", "optics", "pressure", "energy", "bounce",
+         "levers")
 BASE = "http://127.0.0.1:%d" % PORT
 
 
@@ -42,6 +43,7 @@ class TestAPI(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.srv.shutdown()
+        cls.srv.server_close()
 
     def test_topics_registry_lists_ready_and_placeholders(self):
         code, body = get("/api/topics")
@@ -257,9 +259,9 @@ class TestQuizAPI(unittest.TestCase):
     def test_catalogue_without_and_with_a_player(self):
         code, body = self.get("/api/quiz")
         self.assertEqual(code, 200)
-        self.assertEqual(len(body["modules"]), 9)
-        self.assertEqual(body["count"], 27)
-        self.assertEqual(body["max_score"], 9 * (10 + 20 + 30))
+        self.assertEqual(len(body["modules"]), len(READY))
+        self.assertEqual(body["count"], 3 * len(READY))
+        self.assertEqual(body["max_score"], len(READY) * (10 + 20 + 30))
         self.assertIsNone(body["player"])
         for m in body["modules"]:
             self.assertEqual([q["difficulty"] for q in m["questions"]], ["easy", "medium", "hard"])

@@ -181,6 +181,21 @@
                 "#ffd166", "bold 12px system-ui", "center");
       }
 
+      // ---- a screen / photocell behind the lens (optional) ----
+      if (vz.screen) {
+        var sc0 = vz.screen, sx = X(sc0.s), half = Math.max(vz.lens.a, sc0.patch / 2 + 1);
+        ctx.fillStyle = "rgba(235,240,250,0.16)"; ctx.fillRect(sx - 3, Y(half), 6, cam.len(2 * half));
+        var py0 = Y(sc0.centre + sc0.patch / 2), ph = Math.max(2, cam.len(sc0.patch));
+        var pg = ctx.createLinearGradient(0, py0, 0, py0 + ph);
+        pg.addColorStop(0, "rgba(255,209,102,0.1)"); pg.addColorStop(0.5, "rgba(255,230,150,0.95)");
+        pg.addColorStop(1, "rgba(255,209,102,0.1)");
+        ctx.fillStyle = pg; ctx.fillRect(sx - 5, py0, 10, ph);
+        ctx.fillStyle = "#7dffa8"; ctx.fillRect(sx + 4, Y(sc0.centre + 0.5), 5, Math.max(2, cam.len(1)));   // the 1 cm cell
+        W.label(ctx, "screen: patch " + sc0.patch.toFixed(1) + " cm · a 1 cm cell gets " +
+                (100 * sc0.share).toFixed(0) + "%", W.clamp(sx, 150, w - 150), Y(half) - 10,
+                sc0.share >= 0.5 ? "#7dffa8" : "#ff9a9a", "bold 11px system-ui", "center");
+      }
+
       // ---- distance bars ----
       var by = Y(0) + 52;
       this._dim(ctx, X(-vz.d_o), X(0), by, "d_o = " + vz.d_o + " cm", "#cfe0ff");

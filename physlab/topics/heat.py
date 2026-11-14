@@ -113,7 +113,24 @@ def run(p):
         notes += _water_notes("B", [f["temp_b"] for f in frames])
 
     def mat_info(m):
-        return {"id": m["id"], "label": m["label"], "c": m["c"], "rho": m["rho"]}
+        return {"id": m["id"], "label": m["label"], "c": m["c"], "rho": m["rho"], "alpha": m.get("alpha")}
+
+    # thermal expansion at the biggest temperature change of the run (a
+    # heat leak later brings everything back to the room): dL = alpha L dT
+    def swing(key, t0):
+        return max((f[key] - t0 for f in frames), key=abs)
+    dt_a, dt_b = swing("temp_a", p["temp_a"]), swing("temp_b", p["temp_b"])
+    grow = []
+    for lab, m_, dtx in (("A", mat_a, dt_a), ("B", mat_b, dt_b)):
+        if m_.get("alpha"):
+            grow.append({"label": "Block %s grows (at its biggest change, %+.1f K)" % (lab, dtx),
+                         "value": round(m_["alpha"] * dtx * 1e6, 1),
+                         "unit": "µm per metre (α = %.1f × 10⁻⁶ /K)" % (m_["alpha"] * 1e6)})
+    expansion = {}
+    for lab, m_, dtx in (("A", mat_a, dt_a), ("B", mat_b, dt_b)):
+        if m_.get("alpha"):
+            expansion.update({"alpha_%s" % lab: m_["alpha"], "dT_%s" % lab: round(dtx, 2),
+                              "dL_%s (mm per m)" % lab: round(m_["alpha"] * dtx * 1000.0, 4)})
 
     return {
         "frames": frames,
@@ -127,7 +144,7 @@ def run(p):
             {"label": "Heat transferred A -> B", "value": round(q_moved / 1000.0, 3), "unit": "kJ"},
             {"label": "Heat capacity A (m x c)", "value": round(cap_a, 1), "unit": "J/K"},
             {"label": "Heat capacity B (m x c)", "value": round(cap_b, 1), "unit": "J/K"},
-        ],
+        ] + grow,
         "formula": [
             {"expr": "Q = m * c * dT",
              "values": {"c_A": int(ca), "dT_A": round(last["temp_a"] - p["temp_a"], 2),
@@ -137,5 +154,6 @@ def run(p):
             {"expr": "T_eq = (m_a c_a T_a + m_b c_b T_b) / (m_a c_a + m_b c_b)",
              "values": {"T_a": round(p["temp_a"], 1), "T_b": round(p["temp_b"], 1),
                         "T_eq": round(t_eq, 2)}},
+            {"expr": "dL = alpha * L * dT", "values": expansion or {"note": "liquids: no length to grow"}},
         ],
     }

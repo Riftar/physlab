@@ -28,11 +28,12 @@
     duration: function (runs) { var f = runs[0].result.frames; return f[f.length - 1].t; },
 
     init: function (ctx, w, h, runs) {
-      var vz = runs[0].result.viz, tank = vz.tank;
-      var sc = 560 / tank.w;                           // px per metre (true scale)
-      this.geo = { sc: sc, left: w - 20 - tank.w * sc, right: w - 20, floor: h - 18,
-                   top: h - 18 - tank.h * sc };
-      this.geo.cx = this.geo.left + 0.42 * (this.geo.right - this.geo.left);   // leave room for the force box
+      var vz = runs[0].result.viz, tank = vz.tank, well = tank.kind === "well";
+      var sc = well ? (h - 80) / tank.h : 560 / tank.w;        // px per metre (true scale)
+      var left = well ? 0.52 * w - tank.w * sc / 2 : w - 20 - tank.w * sc;
+      this.geo = { sc: sc, left: left, right: left + tank.w * sc, floor: h - 18, top: h - 18 - tank.h * sc,
+                   well: well, boxX: well ? w - 232 : null };
+      this.geo.cx = this.geo.left + (well ? 0.5 : 0.42) * (this.geo.right - this.geo.left);   // room for the force box
       this.ripples = []; this.drops = []; this.prevH = null; this.rand = D.rng(77);
       // pressure arrows: scaled to the most the object itself feels in this run
       var pmax = Math.max.apply(null, runs[0].result.frames.map(function (q) { return q.p_bot; }));
@@ -50,20 +51,39 @@
       this._effects(f, clock, s, ox, surf, vz.size);
 
       // ---- tank back + liquid body (darker with depth: pressure grows) ----
+      if (g.well) {                                          // a stone-lined well
+        ctx.fillStyle = "#3b3440"; ctx.fillRect(g.left - 16, g.top, 16, g.floor - g.top + 18);
+        ctx.fillRect(g.right, g.top, 16, g.floor - g.top + 18);
+        ctx.strokeStyle = "#5a4f5e"; ctx.lineWidth = 1;
+        for (var by = g.top + 10; by < g.floor + 18; by += 12) {
+          [g.left - 16, g.right].forEach(function (bx) { ctx.strokeRect(bx, by, 16, 12); });
+        }
+      }
       ctx.fillStyle = "rgba(255,255,255,0.03)"; ctx.fillRect(g.left, g.top, g.right - g.left, g.floor - g.top);
       var lg = ctx.createLinearGradient(0, surf, 0, g.floor);
       lg.addColorStop(0, D.rgba(liq.color, 0.28)); lg.addColorStop(1, D.rgba(liq.color, 0.55));
       ctx.fillStyle = lg; ctx.fillRect(g.left, surf, g.right - g.left, g.floor - surf);
 
+      // stones lying on the bottom (they pushed the water up before the object went in)
+      if (vz.tank.pile > 0) {
+        var py = Y(vz.tank.pile), R = D.rng(9);
+        ctx.fillStyle = "#6f6a72"; ctx.fillRect(g.left, py, g.right - g.left, g.floor - py);
+        ctx.fillStyle = "#8d8890";
+        for (var k = 0; k < (g.right - g.left) * (g.floor - py) / 90; k++) {
+          ctx.beginPath(); ctx.arc(g.left + R() * (g.right - g.left), py + R() * (g.floor - py), 2 + R() * 4, 0, 7); ctx.fill();
+        }
+        D.label(ctx, "stones: " + vz.tank.extra.toFixed(0) + " cm³ (+" + (vz.tank.pile * 100).toFixed(1) + " cm)",
+                g.right + (g.well ? 22 : -6), py + 14, "#cfd3e0", "11px system-ui", g.well ? "left" : "right");
+      }
       // original level vs now
-      var y0 = Y(vz.tank.fill);
+      var y0 = Y(vz.tank.fill), lx = g.well ? g.right + 22 : g.left + 6;
       ctx.setLineDash([5, 5]); ctx.strokeStyle = "rgba(255,255,255,0.45)"; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(g.left, y0); ctx.lineTo(g.right, y0); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(g.left, y0); ctx.lineTo(g.well ? g.right + 20 : g.right, y0); ctx.stroke(); ctx.setLineDash([]);
       var rise = (f.level - vz.tank.fill) * 100;
-      D.label(ctx, "level before: " + (vz.tank.fill * 100).toFixed(1) + " cm", g.left + 6, y0 + 14,
+      D.label(ctx, "level before: " + (vz.tank.fill * 100).toFixed(1) + " cm", lx, y0 + 14,
               "rgba(230,238,255,0.75)", "11px system-ui");
       if (rise > 0.05) {
-        D.label(ctx, "now +" + rise.toFixed(2) + " cm (liquid pushed aside)", g.left + 6, surf - 6, "#cfe8ff",
+        D.label(ctx, "now +" + rise.toFixed(2) + (g.well ? " cm" : " cm (liquid pushed aside)"), lx, surf - 6, "#cfe8ff",
                 "bold 11px system-ui");
       }
 
@@ -84,7 +104,7 @@
       ctx.stroke();
 
       // glass walls
-      ctx.strokeStyle = "rgba(200,225,255,0.8)"; ctx.lineWidth = 3;
+      ctx.strokeStyle = g.well ? "#8a7f8e" : "rgba(200,225,255,0.8)"; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(g.left, g.top); ctx.lineTo(g.left, g.floor); ctx.lineTo(g.right, g.floor);
       ctx.lineTo(g.right, g.top); ctx.stroke();
 
@@ -195,15 +215,17 @@
 
       var W = vz.weight, net = f.fb + f.fd + f.fn - W;
       var k = 64 / Math.max(vz.weight, vz.fb_full);
-      D.forceBox(ctx, { x: g.right - 222, y: g.top + 8, w: 214, h: 178 }, [
+      D.forceBox(ctx, { x: g.boxX != null ? g.boxX : g.right - 222, y: g.top + 8, w: 214, h: 178 }, [
         { name: "weight", value: -W, color: COL.weight, dx: -14 },
         { name: "buoyancy", value: f.fb, color: COL.buoy, dx: 0 },
         { name: "drag", value: f.fd, color: COL.drag, dx: 14 },
         { name: "floor", value: f.fn, color: COL.floor, dx: 28 },
         { name: "net", value: net, color: COL.net, dx: -34, dashed: true }
       ], k, { balanced: Math.abs(net) * k < 1.5 ? "balanced: no net force" : null });
-      D.label(ctx, "● centre of mass (weight acts here)   ○ centre of buoyancy (the push up acts here)",
-              g.left, g.top - 8, "#cfe0ff", "11px system-ui");
+      if (g.well) D.label(ctx, "● weight · ○ push up: where they act", g.boxX, g.top + 202, "#cfe0ff",
+                          "11px system-ui");
+      else D.label(ctx, "● centre of mass (weight acts here)   ○ centre of buoyancy (the push up acts here)",
+                   g.left, g.top - 8, "#cfe0ff", "11px system-ui");
     },
 
     _pressure: function (ctx, f, vz, ox, oy, s, surf) {

@@ -19,6 +19,10 @@ piston rises x2 = x1 A1/A2 exactly - incompressible liquid):
   c v       seal and flow friction, c = 20 N s/m
   h2 - h1   the liquid stands higher under the big piston as it rises, so
             its own weight pushes back a little (rho g times the height gap)
+  With push = "weight" the small piston is pushed by a weight resting on it
+  instead (a steel ball in the game's Foundry): F1 = its weight, constant
+  at any speed, and the weight rides down with the piston (its mass moves
+  too: m_p + F1/g + M (A1/A2)^2).
 The small piston starts against its top stop, so if the push is too weak
 nothing moves (the stop holds the difference). The run ends at the bottom
 of the stroke, or when everything has stalled.
@@ -58,8 +62,11 @@ def output_distance(d1, a1, a2):
     return d1 * a1 / a2
 
 
-def hand_force(f1, v):
+def person_force(f1, v):
     return f1 * max(0.0, 1.0 - max(v, 0.0) / V_HAND)
+
+
+hand_force = person_force                     # (the name the tests and older code use)
 
 
 def needed_push(m, g, a1, a2, rho, x1):
@@ -84,11 +91,15 @@ def run(p):
     a1, a2 = area(p["d1"]), area(p["d2"])
     stroke = p["stroke"] / 100.0
     ratio = a2 / a1
-    m_eff = M_PISTON + m * (a1 / a2) ** 2
+    weight = p.get("push", "person") == "weight"
+    m_eff = M_PISTON + m * (a1 / a2) ** 2 + (f1 / g if weight else 0.0)
+
+    def hand_force(f, v):                     # the push at speed v: a person tires, a weight doesn't
+        return f if weight else person_force(f, v)
 
     # the hand's force-speed slope makes the motion stiff when little mass
     # moves (tiny small piston): resolve that relaxation time
-    dt = min(DT, 0.1 * m_eff / (f1 / V_HAND + C_LOSS))
+    dt = min(DT, 0.1 * m_eff / ((0.0 if weight else f1 / V_HAND) + C_LOSS))
 
     def accel(x, v):
         return (hand_force(f1, v) - C_LOSS * v - needed_push(m, g, a1, a2, rho, x)) / m_eff
@@ -165,9 +176,11 @@ def run(p):
     eff = last["w_load"] / last["w_in"] if last["w_in"] > 0 else 0.0
     notes = []
     if not lifted:
-        notes.append("Not enough push: your %.0f N makes %.0f kPa, but holding the %.0f kg load needs "
-                     "%.0f kPa (a %.0f N push). Push harder or use a thinner small piston."
-                     % (f1, p_push / 1000.0, m, need / a1 / 1000.0, need))
+        notes.append("Not enough push: %s %.0f N makes %.0f kPa, but holding the %.0f kg load needs "
+                     "%.0f kPa (a %.0f N push). %s"
+                     % ("the weight's" if weight else "your", f1, p_push / 1000.0, m, need / a1 / 1000.0, need,
+                        "Use a heavier weight, a thinner small piston or a wider big one." if weight else
+                        "Push harder or use a thinner small piston."))
     else:
         notes.append("The small piston went down %.0f cm but the big one rose only %.2f mm: %.0fx the "
                      "force, 1/%.0f of the distance. Real car jacks pump many short strokes, with valves "
@@ -182,7 +195,8 @@ def run(p):
         "viz": {"a1": a1, "a2": a2, "d1": p["d1"] / 100.0, "d2": p["d2"] / 100.0, "ratio": ratio,
                 "stroke": stroke, "h0": H0, "mass": m, "g": g, "rho": rho, "fluid": fluid,
                 "need": round(need, 4), "p_push": round(p_push, 3), "f2": round(f2, 3),
-                "weight": round(m * g, 4), "lifted": lifted},
+                "weight": round(m * g, 4), "lifted": lifted, "push": "weight" if weight else "person",
+                "reached": last["x1"] >= stroke - 1e-9},
         "readouts": [
             {"label": "Pressure your push makes p = F1/A1", "value": round(p_push / 1000.0, 2),
              "unit": "kPa (%.2fx air pressure)" % (p_push / P_ATM)},

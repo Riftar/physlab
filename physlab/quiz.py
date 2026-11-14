@@ -99,6 +99,22 @@ def _max_speed(res, p):
     return max(abs(f["v"]) for f in res["frames"])
 
 
+def _bounce_n(n):
+    def f(res, p):
+        ap = res["viz"]["apexes"]
+        return ap[n - 1]["h"] if len(ap) >= n else None
+    return f
+
+
+def _final_tilt(res, p):
+    return round(res["frames"][-1]["theta"] * 180.0 / math.pi, 3)
+
+
+def _left_end_speed(res, p):
+    v = res["viz"]
+    return v["v1"] if v["hit"] == 1 else None
+
+
 def _height_if_over_hill(res, p):
     return p["height"] if res["frames"][-1]["x"] > 14.0 else None
 
@@ -130,6 +146,13 @@ METRICS = {
     "lift_mm": {"fn": _lift_mm, "label": "car's rise", "unit": "mm",
                 "fail": "The car didn't move - the push is too weak for that small piston."},
     "max_speed": {"fn": _max_speed, "label": "top speed", "unit": "m/s"},
+    "bounce_height": {"fn": _bounce_n(1), "label": "first bounce height", "unit": "m",
+                      "fail": "It didn't bounce at all."},
+    "third_bounce": {"fn": _bounce_n(3), "label": "third bounce height", "unit": "m",
+                     "fail": "It stopped bouncing before the third bounce."},
+    "final_tilt": {"fn": _final_tilt, "label": "beam's tilt at the end", "unit": "°"},
+    "left_end_speed": {"fn": _left_end_speed, "label": "left end's speed at the top stop", "unit": "m/s",
+                       "fail": "The right end never went down, so the left end was never lifted."},
     "height_if_over_hill": {"fn": _height_if_over_hill, "label": "start height", "unit": "m",
                             "fail": "The box never made it over the hill."},
 }
@@ -510,6 +533,92 @@ QUESTIONS = [
                   "the energy bar's grey part shows the heat.",
       solution="About 5.1 m: from 5.0 m the box just fails, from 5.1 m it makes it over.",
       solutions=[{"height": 5.2}, {"height": 5.1}], wrong=[{"height": 3.5}, {"height": 6.0}]),
+    # ---------------- bounces ----------------
+    Q(id="bounce-easy", topic="bounce", difficulty="easy", title="Bounce to 1 metre",
+      prompt="A rubber ball lands on a steel plate (e = 0.85), with no air. From what height must you drop it so "
+             "that its first bounce reaches 1.00 m?",
+      setup={"ball": "rubber", "surface": "steel_plate", "air": False, "g": 9.81},
+      inputs=[{"param": "height", "start": 2.0}],
+      goal={"metric": "bounce_height", "min": 0.97, "max": 1.03, "target": 1.0},
+      feedback={"low": "Not high enough - drop it from higher up.",
+                "high": "Too high - drop it from lower down."},
+      explanation="A bounce sends the ball back up with e times its speed, and height goes with speed squared: "
+                  "h1 = e² × h0. Turn it round: h0 = h1 / e².",
+      solution="h0 = 1.00 m / 0.85² = 1.00 / 0.7225 ≈ 1.38 m (1.40 m on the slider bounces to 1.01 m).",
+      solutions=[{"height": 1.4}, {"height": 1.35}], wrong=[{"height": 1.0}, {"height": 2.0}]),
+    Q(id="bounce-medium", topic="bounce", difficulty="medium", title="The tennis-ball test",
+      prompt="Dropped from 2.50 m (with air), a good tennis ball must bounce back to between 1.35 m and 1.50 m. "
+             "Which surface passes the test?",
+      setup={"ball": "tennis", "height": 2.5, "air": True, "g": 9.81},
+      inputs=[{"param": "surface", "start": "hardwood"}],
+      goal={"metric": "bounce_height", "min": 1.35, "max": 1.5, "target": 1.42},
+      feedback={"low": "Too low - this surface soaks up too much of the bounce. Try a harder one.",
+                "high": "Too bouncy for the test."},
+      explanation="The bounce height depends on the ball AND what it lands on: h1 = e² × h0, so you need "
+                  "e ≥ √(1.35 / 2.50) ≈ 0.73 - and a bit more, because the air also slows a light, fluffy "
+                  "tennis ball.",
+      solution="The steel plate (e = 0.78): it bounces to about 1.41 m. The hardwood floor (e = 0.73) only gets "
+               "1.24 m once the air has taken its share.",
+      solutions=[{"surface": "steel_plate"}], wrong=[{"surface": "hardwood"}, {"surface": "foam_mat"}]),
+    Q(id="bounce-hard", topic="bounce", difficulty="hard", title="Third bounce at 50 cm",
+      prompt="A rubber ball, with air. Choose the surface AND the drop height so that its THIRD bounce reaches "
+             "50 cm (47-53 cm).",
+      setup={"ball": "rubber", "air": True, "g": 9.81},
+      inputs=[{"param": "surface", "start": "hardwood"}, {"param": "height", "start": 2.0}],
+      goal={"metric": "third_bounce", "min": 0.47, "max": 0.53, "target": 0.5},
+      feedback={"low": "The third bounce is too low - drop from higher, or use a bouncier surface.",
+                "high": "The third bounce is too high - drop from lower."},
+      explanation="Every bounce multiplies the height by e², so three bounces multiply it by e⁶: "
+                  "h3 = e⁶ × h0. Pick a surface, then h0 = 0.50 m / e⁶ - and add a few percent for the air.",
+      solution="Steel plate: 0.85⁶ = 0.377, so h0 ≈ 0.50 / 0.377 = 1.33 m; with the air, 1.40 m works. "
+               "Hardwood: 0.75⁶ = 0.178, so h0 ≈ 2.8 m; with the air, 3.0 m works.",
+      solutions=[{"surface": "steel_plate", "height": 1.4}, {"surface": "hardwood", "height": 3.0}],
+      wrong=[{"surface": "steel_plate", "height": 2.0}, {"surface": "hardwood", "height": 1.4}]),
+]
+
+QUESTIONS += [
+    # ---------------- levers & moments ----------------
+    Q(id="levers-easy", topic="levers", difficulty="easy", title="Balance the seesaw",
+      prompt="2 kg hangs 0.5 m left of the pivot; 1 kg hangs on the right. The pivot turns freely (no friction). "
+             "Where must the 1 kg hang so that the beam stays level?",
+      setup={"m1": 2.0, "d1": 0.5, "m2": 1.0, "friction": 0.0, "start": 0.0, "beam": 1.0, "g": 9.81},
+      inputs=[{"param": "d2", "start": 0.5}],
+      goal={"metric": "final_tilt", "min": -1.0, "max": 1.0, "target": 0.0},
+      feedback={"low": "The left side wins - hang the 1 kg further out.",
+                "high": "The right side wins - hang the 1 kg closer in."},
+      explanation="The beam balances when mass × distance is the same on both sides: m1·d1 = m2·d2. Half the "
+                  "mass needs twice the distance.",
+      solution="d2 = m1·d1 / m2 = 2 × 0.5 / 1 = 1.0 m.",
+      solutions=[{"d2": 1.0}], wrong=[{"d2": 0.5}, {"d2": 0.8}, {"d2": 1.1}]),
+    Q(id="levers-medium", topic="levers", difficulty="medium", title="How heavy a bucket?",
+      prompt="A 3 kg sack hangs 0.4 m left of the pivot. The bucket's hook is 0.6 m right of it, and the pivot "
+             "turns freely. How heavy must the bucket be to balance the sack exactly?",
+      setup={"m1": 3.0, "d1": 0.4, "d2": 0.6, "friction": 0.0, "start": 0.0, "beam": 1.0, "g": 9.81},
+      inputs=[{"param": "m2", "start": 3.0}],
+      goal={"metric": "final_tilt", "min": -1.0, "max": 1.0, "target": 0.0},
+      feedback={"low": "The sack wins - the bucket needs more in it.",
+                "high": "Too heavy - the bucket side goes down."},
+      explanation="It's the turning effects that must match, not the weights: m1·d1 = m2·d2, so "
+                  "m2 = m1·d1 / d2. The bucket hangs further out, so it needs LESS than 3 kg.",
+      solution="m2 = 3 × 0.4 / 0.6 = 2.0 kg.",
+      solutions=[{"m2": 2.0}], wrong=[{"m2": 3.0}, {"m2": 4.5}, {"m2": 1.5}]),
+    Q(id="levers-hard", topic="levers", difficulty="hard", title="Lift it gently",
+      prompt="A 0.25 kg scoop hangs 1.0 m left of the pivot, and the beam starts tilted with that end down "
+             "(-25°). The pivot has a little friction (0.03 N·m). Choose the bucket's mass AND its hook on the "
+             "right so that the scoop is lifted to the top stop, arriving at 0.3-0.9 m/s (not slower, not faster).",
+      setup={"m1": 0.25, "d1": 1.0, "friction": 0.03, "start": -25.0, "beam": 1.0, "g": 9.81},
+      inputs=[{"param": "m2", "start": 1.0}, {"param": "d2", "start": 0.5}],
+      goal={"metric": "left_end_speed", "min": 0.3, "max": 0.9, "target": 0.6},
+      feedback={"low": "Too gentle - add a little more to the bucket (or hook it further out).",
+                "high": "Too fast - it would slam into the stop. Take some weight off."},
+      explanation="First balance: the bucket must beat 0.25 kg·m (m2·d2 > m1·d1), plus the friction. Then a "
+                  "LITTLE more: the leftover turning effect decides how fast the beam turns. There is no simple "
+                  "formula for the arrival speed - the beam also has to get its own mass moving - so start just "
+                  "above balance and nudge.",
+      solution="At d2 = 0.5 m balance is 0.50 kg; 0.55 kg arrives at about 0.68 m/s. At d2 = 0.6 m, 0.45 kg "
+               "arrives at about 0.59 m/s.",
+      solutions=[{"m2": 0.55, "d2": 0.5}, {"m2": 0.45, "d2": 0.6}],
+      wrong=[{"m2": 0.5, "d2": 0.5}, {"m2": 1.0, "d2": 0.5}, {"m2": 0.35, "d2": 1.0}]),
 ]
 
 BY_ID = {q["id"]: q for q in QUESTIONS}

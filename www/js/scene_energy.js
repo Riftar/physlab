@@ -29,9 +29,10 @@
       return Math.max.apply(null, runs.map(function (r) { var f = r.result.frames; return f[f.length - 1].t; }));
     },
     world: function (runs) {
-      var vz = runs[0].result.viz, top = 8;
+      var vz = runs[0].result.viz, camel = vz.kind === "camel", top = camel ? 1.6 : 8;
       vz.track.forEach(function (q) { top = Math.max(top, q[1]); });
       // room on the right for the energy bars (two in compare mode)
+      if (camel) return { x0: vz.x0 - 0.9, x1: vz.x1 + (runs.length > 1 ? 3.2 : 1.8), y0: -0.25, y1: top + 0.55 };
       return { x0: vz.x0 - 2.2, x1: vz.x1 + (runs.length > 1 ? 7.5 : 4.0), y0: -0.8, y1: top + 1.3 };
     },
     worldPad: 0.02,
@@ -55,15 +56,15 @@
 
     render: function (ctx, w, h, simT, clock, runs, view, cam) {
       var vz0 = runs[0].result.viz, X = function (x) { return cam.X(x); }, Y = function (y) { return cam.Y(y); };
-      var multi = runs.length > 1, that = this, custom = vz0.kind === "custom";
+      var multi = runs.length > 1, that = this, custom = vz0.kind === "custom", camel = vz0.kind === "camel";
       ctx.clearRect(0, 0, w, h);
       if (vz0.theme && vz0.theme.sky) {                       // the planet's sky
         var sky = ctx.createLinearGradient(0, 0, 0, h);
         sky.addColorStop(0, vz0.theme.sky); sky.addColorStop(1, "#0b1128");
         ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
       }
-      var top = 8;
-      vz0.track.forEach(function (q) { top = Math.max(top, Math.ceil(q[1] - 1e-9)); });
+      var top = camel ? 1.5 : 8, tick = camel ? 0.25 : 1;
+      vz0.track.forEach(function (q) { top = Math.max(top, Math.ceil((q[1] - 1e-9) / tick) * tick); });
 
       // ---- ground + track ----
       var tr = vz0.track;
@@ -87,14 +88,29 @@
       }
 
       // ---- height ruler ----
-      var rx = X(vz0.x0 - 1.2);
+      var rx = X(vz0.x0 - (camel ? 0.4 : 1.2));
       ctx.strokeStyle = "#6f86c4"; ctx.lineWidth = 1; ctx.fillStyle = "#6f86c4"; ctx.font = "10px ui-monospace, Menlo, monospace";
       ctx.beginPath(); ctx.moveTo(rx, Y(0)); ctx.lineTo(rx, Y(top)); ctx.stroke();
-      for (var m = 0; m <= top; m++) {
+      for (var m = 0; m <= top + 1e-9; m += tick) {
         ctx.beginPath(); ctx.moveTo(rx - 4, Y(m)); ctx.lineTo(rx + 4, Y(m)); ctx.stroke();
-        ctx.textAlign = "right"; ctx.fillText(m + " m", rx - 6, Y(m) + 3);
+        ctx.textAlign = "right"; ctx.fillText((camel ? m.toFixed(2) : m) + " m", rx - 6, Y(m) + 3);
       }
       ctx.textAlign = "left";
+
+      // ---- camel track: the hump's crest (drag it up / down) and its speed limit ----
+      if (camel && vz0.crest) {
+        var cxp = X(vz0.crest[0]), cyp = Y(vz0.crest[1]), vmax = Math.sqrt(vz0.g * vz0.R);
+        ctx.fillStyle = "#ffd166"; ctx.strokeStyle = "#0b1128"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cxp, cyp - 14, 7, 0, 7); ctx.fill(); ctx.stroke();
+        W.label(ctx, "hump " + vz0.crest[1].toFixed(2) + " m · crest radius R = " + vz0.R.toFixed(1) + " m", cxp,
+                cyp + 30, "#ffd166", "bold 11px system-ui", "center");
+        W.label(ctx, "faster than √(g·R) = " + vmax.toFixed(2) + " m/s over the top and it flies off", cxp, cyp + 46,
+                "#cfd8f0", "11px system-ui", "center");
+        cam.handle({ x: cxp, y: cyp - 14, r: 12, cursor: "ns-resize", title: "drag the hump up or down",
+                     drag: function (pt) {
+                       cam.setParams({ hump: Math.min(1.6, Math.max(0.2, Math.round(pt.y * 100) / 100)) }, false);
+                     } });
+      }
 
       // ---- start height line + draggable start flag ----
       runs.forEach(function (run, ri) {
@@ -281,6 +297,10 @@
 
     /* project the pointer onto the start side of the track -> new height */
     _dragStart: function (pt, vz, cam) {
+      if (vz.kind === "camel") {                  // the camel ramp is built from its top height
+        cam.setParams({ height: Math.min(8, Math.max(0.5, Math.round(pt.y * 10) / 10)) }, false);
+        return;
+      }
       var best = null;
       vz.track.forEach(function (q) {
         var onStartSide = vz.kind === "halfpipe" ? q[0] <= (vz.x0 + vz.x1) / 2 : q[0] <= 8.0;

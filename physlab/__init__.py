@@ -30,12 +30,13 @@ def select(pid, label, choices, default):
 
 # c: specific heat, J/(kg K); rho: density, kg/m^3 (room temperature).
 # Density sets each block's true size on screen: 1 kg of water is a 10 cm
-# cube, 1 kg of copper only 4.8 cm.
+# cube, 1 kg of copper only 4.8 cm. alpha: linear thermal expansion, 1/K
+# (how much longer each metre gets per kelvin; none for the liquid).
 MATERIALS = [
-    {"id": "water", "label": "Water", "c": 4186.0, "rho": 1000.0},
-    {"id": "aluminum", "label": "Aluminum", "c": 900.0, "rho": 2700.0},
-    {"id": "iron", "label": "Iron", "c": 450.0, "rho": 7874.0},
-    {"id": "copper", "label": "Copper", "c": 385.0, "rho": 8960.0},
+    {"id": "water", "label": "Water", "c": 4186.0, "rho": 1000.0, "alpha": None},
+    {"id": "aluminum", "label": "Aluminum", "c": 900.0, "rho": 2700.0, "alpha": 23.1e-6},
+    {"id": "iron", "label": "Iron", "c": 450.0, "rho": 7874.0, "alpha": 12.0e-6},
+    {"id": "copper", "label": "Copper", "c": 385.0, "rho": 8960.0, "alpha": 16.5e-6},
 ]
 
 # Floating & sinking. rho in kg/m^3 near 20 C; mu = dynamic viscosity, Pa s
@@ -45,6 +46,8 @@ SOLIDS = [
     {"id": "pine", "label": "Pine wood", "rho": 510.0, "color": "#d8a35a"},
     {"id": "ice", "label": "Ice", "rho": 917.0, "color": "#d9f1ff"},
     {"id": "rubber", "label": "Rubber", "rho": 1100.0, "color": "#4a4a58"},
+    {"id": "bouncy", "label": "Bouncy-ball rubber", "rho": 1149.0, "color": "#e0455a"},
+    {"id": "woodball", "label": "Toy-ball wood (alder)", "rho": 597.0, "color": "#a8703a"},
     {"id": "aluminum", "label": "Aluminum", "rho": 2700.0, "color": "#c3c9d2"},
     {"id": "iron", "label": "Iron", "rho": 7874.0, "color": "#6b7079"},
     {"id": "gold", "label": "Gold", "rho": 19300.0, "color": "#f2c230"},
@@ -81,6 +84,22 @@ ENDS = [
     {"id": "open", "label": "Endless rope (no echo)"},
 ]
 
+# Bounces: the balls are the sandbox's bobs (same mass, size, drag); what a
+# bounce keeps depends on the PAIR ball x surface (restitution table in
+# topics/bounce.py).
+BOUNCE_BALLS = [
+    {"id": "rubber", "label": "Rubber ball (130 g, 6 cm)", "mass": 0.13, "d": 0.06, "cd": 0.47, "color": "#e0455a"},
+    {"id": "tennis", "label": "Tennis ball (58 g, 6.7 cm)", "mass": 0.058, "d": 0.067, "cd": 0.55, "color": "#d8f03c"},
+    {"id": "steel", "label": "Steel ball (510 g, 5 cm)", "mass": 0.51, "d": 0.05, "cd": 0.47, "color": "#c0c8d8"},
+    {"id": "wood", "label": "Wooden ball (160 g, 8 cm)", "mass": 0.16, "d": 0.08, "cd": 0.47, "color": "#a8703a"},
+]
+BOUNCE_SURFACES = [
+    {"id": "steel_plate", "label": "Steel plate", "color": "#aab3c5"},
+    {"id": "hardwood", "label": "Hardwood floor", "color": "#c98b4a"},
+    {"id": "foam_mat", "label": "Foam gym mat", "color": "#4f7fd8"},
+    {"id": "sand", "label": "Sand", "color": "#e2c27a"},
+]
+
 TOPICS = [
     {
         "id": "circuits", "title": "Electric Circuits", "status": "ready",
@@ -110,13 +129,16 @@ TOPICS = [
             number("angle", "Launch angle", 5.0, 85.0, 45.0, "deg", 1.0),
             number("mass", "Mass", 0.1, 5.0, 1.0, "kg", 0.05),
             number("drag", "Air drag k", 0.0, 0.5, 0.0, "kg/m", 0.001),
-            number("wind", "Wind (+ pushes forward)", -10.0, 10.0, 0.0, "m/s"),
+            number("wind", "Wind (+ pushes forward)", -20.0, 20.0, 0.0, "m/s", 0.1),
             number("g", "Gravity", 1.6, 25.0, 9.81, "m/s^2", 0.01),
+            number("height", "Launch height", 0.0, 20.0, 0.0, "m", 0.1),
         ],
         "formulas": [
             {"expr": "a = -g - (k/m) * v_air * |v_air|",
              "legend": "gravity pulls down; drag pushes against the ball's motion through the air (v_air = ball velocity - wind)"},
             {"expr": "Range = v0^2 * sin(2*angle) / g", "legend": "no-drag flight distance (the drag slider changes it)"},
+            {"expr": "x = v0*cos(a) * (v0*sin(a) + sqrt((v0*sin(a))^2 + 2*g*h)) / g",
+             "legend": "no-drag distance when it's launched h metres above the ground"},
         ],
     },
     {
@@ -137,6 +159,8 @@ TOPICS = [
             {"expr": "Q = m * c * dT", "legend": "heat moved = mass x specific heat x temperature change"},
             {"expr": "T_eq = (m_a c_a T_a + m_b c_b T_b) / (m_a c_a + m_b c_b)",
              "legend": "where the two temperatures meet (no heat leak)"},
+            {"expr": "dL = alpha * L * dT",
+             "legend": "metals grow a tiny bit when they warm up (and shrink when they cool)"},
         ],
     },
     {
@@ -151,6 +175,11 @@ TOPICS = [
             select("fluid", "Liquid in the tank", FLUIDS, "water"),
             number("g", "Gravity", 1.6, 25.0, 9.81, "m/s^2", 0.01),
             number("start", "Start height (centre above surface)", -30.0, 30.0, 15.0, "cm", 1.0),
+            number("salt", "Salt stirred into fresh water", 0.0, 400.0, 0.0, "g/L", 5.0),
+            select("vessel", "Container", [{"id": "tank", "label": "Glass tank (100 × 40 cm)"},
+                                           {"id": "well", "label": "Narrow well (10 cm across)"}], "tank"),
+            number("depth", "Water depth before", 5.0, 60.0, 40.0, "cm", 0.5),
+            number("extra", "Stones already on the bottom", 0.0, 4000.0, 0.0, "cm³", 5.0),
         ],
         "formulas": [
             {"expr": "F_b = rho_fluid * V_sub * g",
@@ -158,6 +187,9 @@ TOPICS = [
             {"expr": "W = rho_obj * V * g", "legend": "the object's weight pulls down"},
             {"expr": "V_sub / V = rho_obj / rho_fluid",
              "legend": "a floater sinks in until F_b = W - the denser it is, the deeper it sits (g cancels out!)"},
+
+            {"expr": "dh = V_pushed / A",
+             "legend": "the water rises by the volume pushed aside ÷ the container's area - fast in a narrow well"},
         ],
     },
     {
@@ -209,6 +241,7 @@ TOPICS = [
             number("radius", "Surface curvature radius R", 6.0, 60.0, 20.0, "cm", 0.5),
             number("d_o", "Candle distance d_o", 2.0, 100.0, 30.0, "cm", 0.5),
             number("h_o", "Candle height h_o", 1.0, 8.0, 4.0, "cm", 0.5),
+            number("screen", "Screen behind the lens (0 = none)", 0.0, 200.0, 0.0, "cm", 0.5),
         ],
         "formulas": [
             {"expr": "1/f = (n - 1) * (1/R1 - 1/R2)",
@@ -216,18 +249,23 @@ TOPICS = [
             {"expr": "1/f = 1/d_o + 1/d_i", "legend": "the thin-lens equation: where the image appears"},
             {"expr": "m = -d_i / d_o = h_i / h_o", "legend": "magnification: how big, and which way up"},
             {"expr": "n = c / v", "legend": "light slows down in glass - that's why it bends"},
+            {"expr": "blur = D * |s - d_i| / d_i",
+             "legend": "a screen away from the image gets a blurred patch, not a sharp picture"},
         ],
     },
     {
         "id": "pressure", "title": "Pressure", "status": "ready", "icon": "press",
         "blurb": "Push a small piston, lift a car. The liquid passes the pressure on, so a small force over a small area makes a big force over a big area.",
         "params": [
-            number("force", "Your push F1", 10.0, 600.0, 150.0, "N", 5.0),
+            number("force", "Your push F1", 1.0, 600.0, 150.0, "N", 1.0),
             number("d1", "Small piston diameter", 1.0, 10.0, 3.0, "cm", 0.5),
-            number("d2", "Big piston diameter", 5.0, 60.0, 30.0, "cm", 1.0),
-            number("mass", "Load on the big piston", 0.0, 2000.0, 1000.0, "kg", 10.0),
+            number("d2", "Big piston diameter", 2.0, 60.0, 30.0, "cm", 0.1),
+            number("mass", "Load on the big piston", 0.0, 2000.0, 1000.0, "kg", 0.1),
             number("stroke", "Push distance d1", 5.0, 40.0, 25.0, "cm", 1.0),
             select("fluid", "Liquid", HYDRAULIC_FLUIDS, "oil"),
+            select("push", "What pushes the small piston",
+                   [{"id": "person", "label": "A person (weaker the faster they push)"},
+                    {"id": "weight", "label": "A weight resting on it (same push at any speed)"}], "person"),
         ],
         "formulas": [
             {"expr": "P = F / A", "legend": "pressure = force / area"},
@@ -242,7 +280,8 @@ TOPICS = [
         "blurb": "Let go of a box or a ball on a track and watch its energy swap between height, speed, spin and heat.",
         "params": [
             select("track", "Track", [{"id": "halfpipe", "label": "Half-pipe"},
-                                      {"id": "hill", "label": "Drop and hill"}], "halfpipe"),
+                                      {"id": "hill", "label": "Drop and hill"},
+                                      {"id": "camel", "label": "Camel hump (1.5 m machine track)"}], "halfpipe"),
             select("object", "Object", [{"id": "box", "label": "Box (slides)"},
                                         {"id": "solid_ball", "label": "Solid ball (rolls)"},
                                         {"id": "hollow_ball", "label": "Hollow ball (rolls)"}], "box"),
@@ -250,6 +289,7 @@ TOPICS = [
             number("mass", "Mass m", 0.5, 100.0, 20.0, "kg", 0.5),
             number("friction", "Friction mu", 0.0, 0.5, 0.0, "", 0.01),
             number("g", "Gravity", 1.6, 25.0, 9.81, "m/s^2", 0.01),
+            number("hump", "Hump height (camel track)", 0.2, 1.6, 1.0, "m", 0.01),
         ],
         "formulas": [
             {"expr": "E = 0.5*m*v^2 + m*g*h", "legend": "kinetic + potential: without friction the total never changes"},
@@ -259,6 +299,53 @@ TOPICS = [
         ],
     },
 ]
+
+
+TOPICS.append({
+    "id": "bounce", "title": "Bounces", "status": "ready", "icon": "bounce", "compare": "ball",
+    "blurb": "Drop a ball and watch it bounce back lower every time. How much it keeps depends on the ball AND on "
+             "what it lands on.",
+    "params": [
+        select("ball", "Ball", BOUNCE_BALLS, "rubber"),
+        select("surface", "Lands on", BOUNCE_SURFACES, "steel_plate"),
+        number("height", "Drop height h0", 0.2, 4.0, 2.0, "m", 0.05),
+        number("g", "Gravity", 1.6, 25.0, 9.81, "m/s^2", 0.01),
+        boolean("air", "Air drag", True),
+    ],
+    "formulas": [
+        {"expr": "v = sqrt(2*g*h)", "legend": "falling h metres, the ball hits the floor this fast"},
+        {"expr": "v_after = e * v_before",
+         "legend": "a bounce sends it back up with only a fraction e of that speed - e depends on the ball AND the "
+                   "surface"},
+        {"expr": "h1 = e^2 * h0", "legend": "height goes with speed squared, so each bounce reaches e^2 of the "
+                                            "height before (air takes a little more)"},
+    ],
+})
+
+
+TOPICS.append({
+    "id": "levers", "title": "Levers & Moments", "status": "ready", "icon": "levers",
+    "blurb": "Hang loads on a beam on a pivot. A small weight far out can lift a big one close in - it's the "
+             "turning effect that counts, not the weight alone.",
+    "params": [
+        number("m1", "Left load m1", 0.0, 5.0, 2.0, "kg", 0.05),
+        number("d1", "Left load distance d1", 0.05, 1.1, 0.5, "m", 0.05),
+        number("m2", "Right load m2", 0.0, 5.0, 1.0, "kg", 0.05),
+        number("d2", "Right load distance d2", 0.05, 1.1, 0.8, "m", 0.05),
+        number("beam", "Beam mass (2.2 m long)", 0.0, 5.0, 1.0, "kg", 0.1),
+        number("friction", "Pivot friction", 0.0, 1.0, 0.03, "N m", 0.01),
+        number("start", "Start angle (+ = right end down)", -25.0, 25.0, 0.0, "deg", 1.0),
+        number("g", "Gravity", 1.6, 25.0, 9.81, "m/s^2", 0.01),
+    ],
+    "formulas": [
+        {"expr": "m1 * d1 = m2 * d2", "legend": "the principle of moments: the beam balances when mass x distance "
+                                                "is the same on both sides"},
+        {"expr": "tau = m * g * d", "legend": "turning effect (moment) of a load: its weight x its distance from the "
+                                              "pivot"},
+        {"expr": "alpha = tau_net / I", "legend": "out of balance it turns - the faster, the bigger the leftover "
+                                                  "turning effect and the smaller the moment of inertia I = Σ m r²"},
+    ],
+})
 
 
 def spec(topic_id):

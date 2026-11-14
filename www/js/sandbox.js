@@ -113,6 +113,8 @@
     var blurb = L.left.querySelector(".blurb");
     if (blurb) blurb.textContent = cfg.intro;
     L.left.insertBefore(modeToggle(t.id, "sandbox"), L.left.querySelector("h2"));
+    var ret = U.returnBanner();                  // came here from a game station's "Open in the lab"?
+    if (ret) L.left.insertBefore(ret, L.left.firstChild);
 
     var stage = new PL.Stage(880, 500);
     var bar = U.PlayBar(scene.options, view, {

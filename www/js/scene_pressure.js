@@ -103,13 +103,23 @@
 
       // ---- the hand and the load ----
       var hy = Y(y1 + 0.32);
-      PL.drawSprite(ctx, "hand", X(g.xs), hy - 26, 54);
+      if (vz.push === "weight") {                      // a weight resting on the small piston (rides down with it)
+        var wr = 16;
+        ctx.fillStyle = "#c0c8d8"; ctx.strokeStyle = "#0b1128"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(X(g.xs), hy - wr, wr, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,0.5)";
+        ctx.beginPath(); ctx.arc(X(g.xs) - 5, hy - wr - 5, 5, 0, 7); ctx.fill();
+        W.label(ctx, "weight " + (vz.p_push * vz.a1).toFixed(1) + " N", X(g.xs), hy - 2 * wr - 8, "#cfe0ff",
+                "11px system-ui", "center");
+      } else {
+        PL.drawSprite(ctx, "hand", X(g.xs), hy - 26, 54);
+      }
       var platW = Math.max(2 * g.r2 + 0.1, 0.34), platY = y2 + pth;
       ctx.fillStyle = "#5d6b94"; ctx.fillRect(X(g.xb - platW / 2), Y(platY + 0.02), cam.len(platW), cam.len(0.02));
       if (vz.mass > 0) {
         var big = vz.mass >= 300, lw = cam.len(platW) * (big ? 1.0 : 0.6);
         PL.drawSprite(ctx, big ? "car" : "crate", X(g.xb), Y(platY + 0.02) - lw / 2 + (big ? lw * 0.1 : 0), lw);
-        W.label(ctx, vz.mass.toFixed(0) + " kg" + (big ? " car (not to scale)" : ""), X(g.xb),
+        W.label(ctx, (vz.mass >= 10 || vz.mass === Math.round(vz.mass) ? vz.mass.toFixed(0) : vz.mass.toFixed(1)) + " kg" + (big ? " car (not to scale)" : ""), X(g.xb),
                 Y(platY + 0.02) - lw * (big ? 0.75 : 1.05), "#eef2ff", "bold 12px system-ui", "center");
       }
 
@@ -137,7 +147,7 @@
                           keys: [["load", "#7dffa8"], ["liquid", "#5cd6ff"], ["heat", "#8a90a8"]],
                           keyX: 14, keyStep: 60 });
       W.hud(ctx, [
-        "t = " + f.t.toFixed(2) + " s   push " + f.f_hand.toFixed(0) + " N",
+        "t = " + f.t.toFixed(2) + " s   push " + f.f_hand.toFixed(vz.push === "weight" ? 2 : 0) + " N",
         "pressure p = " + (f.p1 / 1000).toFixed(1) + " kPa everywhere in the liquid",
         { text: !vz.lifted ? "not enough push - nothing moves" :
                 f.v2 > 1e-7 ? "the big piston rises at " + (f.v2 * 1000).toFixed(2) + " mm/s" :

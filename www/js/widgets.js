@@ -16,7 +16,9 @@
   window.PL = window.PL || {};
 
   PL.SPRITES = ["lamp", "battery", "switch", "resistor", "block", "ball", "ramp", "wire",
-                "bob", "clamp", "oscillator", "hand", "candle", "eye", "car", "crate"];
+                "bob", "clamp", "oscillator", "hand", "candle", "eye", "car", "crate",
+                "hopper", "saltbag", "cannon", "toybox", "gizmo", "minecart", "kettle", "coil", "magnet", "ladle",
+                "grainsack", "haycart", "bucket", "millstone"];
 
   /* ---- sprite assets: white-keyed at load, tintable ---- */
   PL.sprites = {};

@@ -18,6 +18,14 @@
     "T_b": 20.0,
     "T_eq": 77.61
    }
+  },
+  {
+   "expr": "dL = alpha * L * dT",
+   "values": {
+    "alpha_B": 1.2e-05,
+    "dL_B (mm per m)": 0.6912,
+    "dT_B": 57.6
+   }
   }
  ],
  "frames": [
@@ -726,12 +734,14 @@
  ],
  "materials": {
   "a": {
+   "alpha": null,
    "c": 4186.0,
    "id": "water",
    "label": "Water",
    "rho": 1000.0
   },
   "b": {
+   "alpha": 1.2e-05,
    "c": 450.0,
    "id": "iron",
    "label": "Iron",
@@ -769,6 +779,11 @@
    "label": "Heat capacity B (m x c)",
    "unit": "J/K",
    "value": 900.0
+  },
+  {
+   "label": "Block B grows (at its biggest change, +57.6 K)",
+   "unit": "\u00b5m per metre (\u03b1 = 12.0 \u00d7 10\u207b\u2076 /K)",
+   "value": 691.2
   }
  ],
  "tau": 37.037

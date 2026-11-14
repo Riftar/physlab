@@ -232,7 +232,8 @@
   function beaufort(v) {
     var a = Math.abs(v);
     return a < 0.3 ? "calm" : a < 1.6 ? "light air" : a < 3.4 ? "light breeze"
-      : a < 5.5 ? "gentle breeze" : a < 8.0 ? "moderate breeze" : "fresh breeze";
+      : a < 5.5 ? "gentle breeze" : a < 8.0 ? "moderate breeze" : a < 10.8 ? "fresh breeze"
+      : a < 13.9 ? "strong breeze" : a < 17.2 ? "near gale" : "gale";
   }
 
   var motion = {
@@ -350,11 +351,17 @@
         var f = PL.frameAt(frames, simT);
         var landed = simT >= last.t && res.landed;
 
-        // launcher
-        var rad = p.angle * Math.PI / 180;
+        // launcher (on a tower when it's launched from a height)
+        var rad = p.angle * Math.PI / 180, h0 = p.height || 0;
+        if (h0 > 0 && ri === 0) {
+          ctx.fillStyle = "#3a4678"; ctx.fillRect(sx(0) - 26, sy(h0), 26, g.ground - sy(h0));
+          ctx.strokeStyle = "#5c6a9c"; ctx.lineWidth = 1; ctx.strokeRect(sx(0) - 26, sy(h0), 26, g.ground - sy(h0));
+          label(ctx, "launched " + h0.toFixed(h0 < 10 ? 1 : 0) + " m up", sx(0) - 30, sy(h0) + 14, "#a9bbef",
+                "11px system-ui", "right");
+        }
         ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 5; ctx.lineCap = "round";
-        ctx.beginPath(); ctx.moveTo(sx(0), sy(0));
-        ctx.lineTo(sx(0) + Math.cos(rad) * 40, sy(0) - Math.sin(rad) * 40); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx(0), sy(h0));
+        ctx.lineTo(sx(0) + Math.cos(rad) * 40, sy(h0) - Math.sin(rad) * 40); ctx.stroke();
         ctx.lineCap = "butt";
 
         // no-air parabola (dashed) - what the drag costs
@@ -376,7 +383,7 @@
 
         // travelled path
         ctx.strokeStyle = col; ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.moveTo(sx(0), sy(0));
+        ctx.beginPath(); ctx.moveTo(sx(0), sy(h0));
         for (var i = 1; i < frames.length && frames[i].t <= simT; i++) ctx.lineTo(sx(frames[i].x), sy(frames[i].y));
         ctx.lineTo(sx(f.x), sy(f.y)); ctx.stroke();
 

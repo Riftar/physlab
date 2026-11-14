@@ -11,6 +11,13 @@ virtual image on the candle's side; f > 0 converging, f < 0 diverging.
 * thin-lens equation     1/f = 1/d_o + 1/d_i
 * magnification          m = h_i / h_o = -d_i / d_o
 * speed of light in glass v = c / n; lens power P = 1/f (dioptres, f in m)
+* a screen at distance s behind the lens (optional, `screen`): the light
+  from the candle lands on a patch = the candle's image at that distance
+  (h_o s / d_o) + the blur circle of the out-of-focus cone,
+      blur = D |s - d_i| / |d_i|        (D = the lens's 10 cm width)
+  and a 1 cm photocell in the middle of it catches (cell / patch)^2 of the
+  light (all of it when the patch is smaller than the cell). In focus
+  (s = d_i) the blur is 0: the patch is just the sharp image.
 
 Two kinds of rays are returned:
   principal rays  the three textbook rays of the thin-lens model (through
@@ -30,6 +37,7 @@ APERTURE = 5.0                # lens half-height, cm
 EDGE = 0.3                    # converging lens: thickness at the rim, cm
 CENTRE_THIN = 0.4             # diverging lens: thickness in the middle, cm
 FAN = 9                       # real rays in the fan
+CELL = 1.0                    # cm: the photocell on the screen
 LOOP = 4.0                    # seconds of light animation before it repeats
 
 
@@ -56,6 +64,20 @@ def image_distance(f, d_o):
 
 def magnification(d_o, d_i):
     return -d_i / d_o
+
+
+def screen_patch(f, d_o, h_o, s):
+    """What lands on a screen s cm behind the lens: {blur, geo, patch, share,
+    defocus, centre} (cm). The lens is 2 * APERTURE wide."""
+    d_i = image_distance(f, d_o)
+    geo_size = h_o * s / d_o                                  # the candle's (sharp or not) image size here
+    if d_i is None:
+        blur, defocus = 2.0 * APERTURE, None                  # a parallel beam as wide as the lens
+    else:
+        blur, defocus = 2.0 * APERTURE * abs(s - d_i) / abs(d_i), s - d_i
+    patch = geo_size + blur
+    return {"s": s, "blur": blur, "geo": geo_size, "patch": patch, "share": min(1.0, (CELL / patch) ** 2),
+            "defocus": defocus, "centre": -0.5 * h_o * s / d_o}
 
 
 def power_dioptres(f_cm):
@@ -236,6 +258,10 @@ def run(p):
         x_left = min(x_left, d_i - 8.0)
         x_right = max(x_right, 30.0)               # room for the eye
     ymax = max(h_o, APERTURE, min(abs(h_i), 40.0) if h_i is not None else 0.0) * 1.3
+    scr = screen_patch(f, d_o, h_o, p["screen"]) if p.get("screen", 0.0) > 0 else None
+    if scr:
+        x_right = max(x_right, scr["s"] + 15.0)
+        ymax = max(ymax, min(scr["patch"] / 2.0 + 2.0, 40.0) * 1.2)
     x_end = x_right + 200.0                        # rays run off the view
 
     rays = principal_rays(f, d_o, h_o, d_i, x_end)
@@ -279,6 +305,16 @@ def run(p):
     if focus is not None and d_i is not None and d_i > 0 and abs(focus[0] - d_i) > 0.03 * d_i:
         notes.append("Real rays (Snell's law through the thick glass) meet at %.1f cm, not %.1f cm: the "
                      "thin-lens formula is a good approximation, not exact." % (focus[0], d_i))
+    if scr:
+        if scr["share"] >= 0.5:
+            notes.append("The photocell gets %.0f%% of the light: the patch on the screen is %.1f cm across." % (
+                100 * scr["share"], scr["patch"]))
+        elif scr["defocus"] is not None and abs(scr["defocus"]) < 1.0:
+            notes.append("The image IS sharp on the screen, but it is %.1f cm wide (x%.1f), so a 1 cm cell only "
+                         "gets %.0f%% of the light." % (scr["geo"], abs(m), 100 * scr["share"]))
+        else:
+            notes.append("Out of focus: the light is smeared over %.1f cm, so a 1 cm cell only gets %.0f%%." % (
+                scr["patch"], 100 * scr["share"]))
     if any(r["tir"] for r in fan):
         notes.append("Some rays hit the glass so steeply that they reflect inside instead of leaving "
                      "(total internal reflection) - diamond sparkles for the same reason.")
@@ -297,7 +333,8 @@ def run(p):
                 "focus": [round(focus[0], 4), round(focus[1], 4)] if focus else None,
                 "box": {"x0": round(x_left, 3), "x1": round(x_right, 3),
                         "y0": round(-ymax, 3), "y1": round(ymax, 3)},
-                "v_light": round(light_speed(n), 1), "loop": LOOP},
+                "v_light": round(light_speed(n), 1), "loop": LOOP,
+                "screen": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in scr.items()} if scr else None},
         "readouts": [
             {"label": "Focal length f", "value": round(f, 2), "unit": "cm"},
             {"label": "Lens power P = 1/f", "value": round(power_dioptres(f), 2), "unit": "dioptres"},
@@ -308,7 +345,15 @@ def run(p):
             {"label": "The image is", "value": kind_txt, "unit": ""},
             {"label": "Speed of light in the lens", "value": int(round(light_speed(n))),
              "unit": "km/s (%.0f%% of c)" % (100.0 / n)},
-        ],
+        ] + ([
+            {"label": "Screen behind the lens", "value": scr["s"], "unit": "cm (%s)" % (
+                "in focus" if scr["defocus"] is not None and abs(scr["defocus"]) < 0.05 else
+                "the sharp image is %.1f cm %s it" % (abs(scr["defocus"]), "in front of" if scr["defocus"] > 0
+                                                       else "behind") if scr["defocus"] is not None else "no image")},
+            {"label": "Light patch on the screen", "value": round(scr["patch"], 2),
+             "unit": "cm (image %.2f + blur %.2f)" % (scr["geo"], scr["blur"])},
+            {"label": "Share on a 1 cm photocell", "value": round(100 * scr["share"], 1), "unit": "%"},
+        ] if scr else []),
         "formula": [
             {"expr": "1/f = (n - 1) * (1/R1 - 1/R2)",
              "values": {"n": n, "R1": radius if kind == "converging" else -radius,
@@ -320,5 +365,9 @@ def run(p):
                         "h_i": round(h_i, 2) if h_i is not None else None}},
             {"expr": "n = c / v",
              "values": {"n": n, "c": int(C_LIGHT), "v": int(round(light_speed(n)))}},
+            {"expr": "blur = D * |s - d_i| / d_i",
+             "values": {"D": 2 * APERTURE, "s": scr["s"], "d_i": r2(d_i, 2), "blur": round(scr["blur"], 2),
+                        "patch": round(scr["patch"], 2), "share": round(scr["share"], 3)} if scr else
+             {"D": 2 * APERTURE, "s": None}},
         ],
     }

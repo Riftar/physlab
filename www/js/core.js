@@ -6,7 +6,12 @@
      PL.spline    natural cubic spline (the sandbox ramp; mirrors the server's
                   energy.SplineTrack so a dragged ramp previews instantly)
      PL.sandbox   sandbox deep links: #/sandbox/<topic>?w=<world JSON>, only
-                  what differs from the defaults */
+                  what differs from the defaults
+     PL.game      the game's pure helpers: knob snapping/clamping (same rules as
+                  physlab/game/common.py), the camel track (mirrors the server's
+                  energy.CamelTrack so a dragged hump previews instantly), and
+                  game deep links #/game/<hall>/<station>?practice=1&v=2&k=<knobs>,
+                  time-lapse zones and station fields along a run's frames */
 (function (root) {
   "use strict";
   var PL = root.PL = root.PL || {};
@@ -228,4 +233,105 @@
       return w;
     }
   };
+
+  /* ---------- the game (The Machine Works) ---------- */
+  function camel(top, hump, R) {
+    // physlab/topics/energy.py CamelTrack, term by term
+    var C = { R: R || 0.8, BASE: 0.10, XC: 3.5, S0: 0.9, X1: 6.5, START_X: 0.25 };
+    var drop = top - C.BASE, a = Math.max(hump - C.BASE, 1e-6), s = Math.sqrt(C.R * a);
+    return {
+      C: C, x0: 0, x1: C.X1,
+      eval: function (x) {
+        var g1 = Math.exp(-x * x / (2 * C.S0 * C.S0)), u = x - C.XC, g2 = Math.exp(-u * u / (2 * s * s));
+        return [C.BASE + drop * g1 + a * g2,
+                drop * g1 * (-x / (C.S0 * C.S0)) + a * g2 * (-u / (s * s)),
+                drop * g1 * (x * x / Math.pow(C.S0, 4) - 1 / (C.S0 * C.S0)) + a * g2 * (u * u / Math.pow(s, 4) - 1 / (s * s))];
+      },
+      polyline: function (n) {
+        var out = [];
+        for (var i = 0; i <= n; i++) { var x = C.X1 * i / n; out.push([x, this.eval(x)[0]]); }
+        return out;
+      }
+    };
+  }
+
+  /* a knob value the server will accept unchanged: clamped into range and
+     snapped onto the slider grid (common.snap); choices fall back to the default */
+  function knobValue(k, v) {
+    if (k.kind === "choice") {
+      return k.choices.some(function (c) { return c.id === v; }) ? v : k.default;
+    }
+    var x = typeof v === "number" ? v : parseFloat(v);
+    if (!isFinite(x)) return k.default;
+    x = Math.min(k.max, Math.max(k.min, x));
+    if (k.kind === "integer") return Math.round(x);
+    var n = Math.round((x - k.min) / k.step);
+    return Math.min(k.max, Math.max(k.min, Math.round((k.min + n * k.step) * 1e6) / 1e6));
+  }
+
+  function knobsFrom(knobs, raw) {
+    var out = {}, got = raw || {};
+    knobs.forEach(function (k) { out[k.id] = knobValue(k, got[k.id] != null ? got[k.id] : k.default); });
+    return out;
+  }
+
+  /* #/game/<hall>/<station>?practice=1&v=<step>&k=<knobs JSON>&debug=1 */
+  function gameHash(o) {
+    var q = [];
+    if (o.practice) q.push("practice=1");
+    if (o.practice && o.v != null) q.push("v=" + o.v);
+    if (o.knobs) q.push("k=" + encodeURIComponent(JSON.stringify(o.knobs)));
+    if (o.debug) q.push("debug=1");
+    return "#/game" + (o.hall ? "/" + o.hall + (o.station ? "/" + o.station : "") : "") + (q.length ? "?" + q.join("&") : "");
+  }
+
+  function gameRoute(hash) {
+    var h = (hash || "").replace(/^#\/?/, ""), qs = "", i = h.indexOf("?");
+    if (i >= 0) { qs = h.slice(i + 1); h = h.slice(0, i); }
+    var parts = h.split("/");
+    if (parts[0] !== "game") return null;
+    var out = { hall: parts[1] || null, station: parts[2] || null, practice: false, v: null, knobs: null, debug: false };
+    qs.split("&").forEach(function (kv) {
+      if (!kv) return;
+      var j = kv.indexOf("="), key = j < 0 ? kv : kv.slice(0, j), val = j < 0 ? "" : decodeURIComponent(kv.slice(j + 1));
+      if (key === "practice") out.practice = val === "1";
+      else if (key === "v") { var n = parseInt(val, 10); out.v = isFinite(n) ? n : null; }
+      else if (key === "debug") out.debug = val === "1";
+      else if (key === "k") { try { var k = JSON.parse(val); if (k && typeof k === "object" && !Array.isArray(k)) out.knobs = k; } catch (e) { out.knobs = null; } }
+    });
+    return out;
+  }
+
+  /* time-lapse: the run's zones [[t0, t1, speed], ...] (slow physics like
+     heating, played faster) -> the playback speed factor at time t (1 outside) */
+  function timelapse(zones, t) {
+    for (var i = 0; zones && i < zones.length; i++) {
+      if (t >= zones[i][0] && t < zones[i][1]) return zones[i][2];
+    }
+    return 1;
+  }
+
+  /* a station field (the ring's temperature, the trapdoor's opening...) at
+     time t: only a station's own frames carry it, so between them it holds
+     the last value, before the first it is `dflt`, and within them it is
+     interpolated linearly. The (t, value) track is cached on the frames. */
+  function fieldAt(frames, key, t, dflt) {
+    if (!frames) return dflt;
+    var cache = frames._fields || (frames._fields = {});
+    var tr = cache[key];
+    if (!tr) {
+      tr = cache[key] = [];
+      for (var i = 0; i < frames.length; i++) if (frames[i][key] != null) tr.push([frames[i].t, frames[i][key]]);
+    }
+    if (!tr.length || t < tr[0][0]) return dflt;
+    if (t >= tr[tr.length - 1][0]) return tr[tr.length - 1][1];
+    var lo = 0, hi = tr.length - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (tr[mid][0] <= t) lo = mid; else hi = mid; }
+    var a = tr[lo], b = tr[hi];
+    if (typeof a[1] !== "number") return a[1];
+    return a[1] + (b[1] - a[1]) * (t - a[0]) / ((b[0] - a[0]) || 1);
+  }
+
+  PL.game = { camel: camel, knobValue: knobValue, knobsFrom: knobsFrom, hash: gameHash, route: gameRoute,
+              timelapse: timelapse, fieldAt: fieldAt };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -15,6 +15,14 @@ POST /api/quiz/answer  {player, question, inputs}
                                        the run so the browser can play it
 POST /api/quiz/reveal  {player, question}   (after 2 wrong tries, no points)
 
+Game - The Machine Works (physlab/game/, GDD docs/game/GDD-machine-works.md):
+GET  /api/game?player=P             -> halls (playable + coming), stars, score
+GET  /api/game/hall?id=H&player=P&v=S  one hall: layout + station cards for P's variant
+                                       (no player: practice mode, variant step S, default 2)
+POST /api/game/run   {player?, hall, station, mode: "test"|"machine", knobs: {station: {...}},
+                      prediction?, v?}  -> validated, run, judged; stars recorded for a player
+POST /api/game/hint  {player?, station, tier, v?}
+
 Sandbox (physlab/sandbox.py):
 GET  /api/sandbox                   -> catalogs, fields, presets and defaults per topic
 POST /api/sandbox/run  {topic, world}
@@ -30,12 +38,14 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 from . import TOPICS, spec, quiz, sandbox
+from .game import service as game
 from .quizdb import QuizDB
-from .topics import circuits, motion, heat, buoyancy, waves, pendulum, optics, pressure, energy
+from .topics import circuits, motion, heat, buoyancy, waves, pendulum, optics, pressure, energy, bounce, levers
 
 RUNNERS = {"circuits": circuits.run, "motion": motion.run, "heat": heat.run,
            "buoyancy": buoyancy.run, "waves": waves.run, "pendulum": pendulum.run,
-           "optics": optics.run, "pressure": pressure.run, "energy": energy.run}
+           "optics": optics.run, "pressure": pressure.run, "energy": energy.run,
+           "bounce": bounce.run, "levers": levers.run}
 WWW = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "www")
 MAX_BODY = 16 * 1024   # POST bodies (quiz answers, sandbox worlds) are small JSON objects
 
@@ -166,8 +176,20 @@ class Handler(BaseHTTPRequestHandler):
             return None, "body must be a JSON object"
         return body, None
 
+    # ---------------- game ----------------
+    def _game(self, fn, *args):
+        try:
+            return self._json(fn(*args))
+        except game.GameError as e:
+            return _bad(self, e.code, str(e))
+
     def do_POST(self):
         path = urlparse(self.path).path
+        if path in ("/api/game/run", "/api/game/hint"):
+            body, err = self._read_json()
+            if err:
+                return _bad(self, 400, err)
+            return self._game(game.run if path == "/api/game/run" else game.hint, body)
         if path == "/api/sandbox/run":
             body, err = self._read_json()
             if err:
@@ -227,6 +249,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"sandbox": sandbox.catalog_view()})
         if parsed.path.startswith("/api/quiz"):
             return self._quiz_get(parsed.path, parse_qs(parsed.query))
+        if parsed.path in ("/api/game", "/api/game/hall"):
+            q = parse_qs(parsed.query)
+            one = lambda k: (q.get(k) or [None])[0]
+            if parsed.path == "/api/game":
+                return self._game(game.catalog, one("player"))
+            return self._game(game.hall_view, one("id") or "", one("player"), one("v"))
         if parsed.path == "/api/run":
             q = parse_qs(parsed.query)
             tid = q.pop("topic", [None])[0]

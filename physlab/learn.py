@@ -27,6 +27,8 @@ LEARN = {
             {"title": "Over-volted (12 V)", "params": {"voltage": 12.0}},
             {"title": "Add a resistor", "params": {"resistor": 20.0}},
             {"title": "Switch off", "params": {"closed": False}},
+            {"title": "A latch coil on a lantern battery", "params": {"voltage": 6.0, "lamp_r": 8.0, "internal_r": 0.4,
+                                                                       "resistor": 6.0}},
         ],
         "formulas": {
             "I = V / (R + r)": {
@@ -133,6 +135,9 @@ LEARN = {
             {"title": "30° vs 60°", "params": {"angle": 30.0}, "b": {"angle": 60.0}},
             {"title": "Heavy vs light ball", "params": {"drag": 0.01, "mass": 2.0}, "b": {"mass": 0.2}},
             {"title": "On the Moon", "params": {"g": 1.62}},
+            {"title": "Off a 20 m tower", "params": {"v0": 10.0, "angle": 30.0, "height": 20.0}},
+            {"title": "A wooden ball in a gale", "params": {"v0": 2.0, "angle": 10.0, "height": 2.5, "mass": 0.15,
+                                                            "drag": 0.001, "wind": 16.0}},
         ],
         "formulas": {
             "a = -g - (k/m) * v_air * |v_air|": {
@@ -162,6 +167,21 @@ LEARN = {
                            "(g six times smaller) the same throw goes six times as far. With air drag the best "
                            "angle is lower than 45°.",
                 "try_it": "Compare 30° and 60° with no drag: both land at 28.6 m.",
+            },
+            "x = v0*cos(a) * (v0*sin(a) + sqrt((v0*sin(a))^2 + 2*g*h)) / g": {
+                "say": "Launched from a height h (no air): distance = sideways speed × time in the air.",
+                "symbols": [["x", "how far from the foot of the tower it lands", "m"],
+                            ["v0*cos(a)", "sideways speed - it never changes without air", "m/s"],
+                            ["v0*sin(a)", "upward speed at launch", "m/s"],
+                            ["h", "launch height above the ground", "m"],
+                            ["g", "gravity", "m/s²"]],
+                "explain": "Split the throw in two. Sideways the ball coasts at a steady speed; up and down it "
+                           "rises, stops and falls - and from a tower it has h metres more to fall, so it stays "
+                           "up longer and lands farther. The time in the air is the bracket ÷ g (the bigger "
+                           "solution of h + v0·sin(a)·t − ½gt² = 0). With h = 0 it becomes the Range formula "
+                           "above. From a height the best angle is a bit less than 45°.",
+                "try_it": "Set the launch height to 20 m, speed 10 m/s, angle 30°: it lands 22.4 m out, "
+                          "2.6 s later.",
             },
         },
         "figures": [
@@ -227,6 +247,9 @@ LEARN = {
             {"title": "Big vs small block", "params": {"material_b": "water", "mass_a": 5.0, "mass_b": 0.5}},
             {"title": "Heat leak to the room", "params": {"loss": 1.5}},
             {"title": "Thermal camera", "params": {}, "view": {"look": "thermal"}},
+            {"title": "Hot water on an aluminium ring", "params": {"material_a": "water", "mass_a": 0.2, "temp_a": 95.0,
+                                                                   "material_b": "aluminum", "mass_b": 0.3,
+                                                                   "temp_b": 20.0, "ambient": 20.0, "loss": 0.1}},
         ],
         "formulas": {
             "Q = m * c * dT": {
@@ -253,6 +276,21 @@ LEARN = {
                            "gap is big and slows down as the temperatures get close, which is why the curves "
                            "in the graph bend and level off. (Exact only with no heat leak to the room.)",
                 "try_it": "Make both blocks copper, 1 kg each: they meet exactly halfway.",
+            },
+            "dL = alpha * L * dT": {
+                "say": "When a metal warms up it gets a tiny bit longer: length change = expansion "
+                       "coefficient × length × temperature change.",
+                "symbols": [["dL", "how much longer it gets (ΔL)", "m"],
+                            ["alpha", "linear expansion coefficient (α): how much each metre grows per kelvin", "1/K"],
+                            ["L", "its length (or the width of a hole in it)", "m"],
+                            ["dT", "temperature change (ΔT)", "K (= °C of change)"]],
+                "explain": "Hotter atoms jiggle harder and push each other a little further apart, so the "
+                           "whole piece grows - in every direction, and holes in it grow too, exactly as if "
+                           "they were made of the metal. The numbers are tiny: aluminium grows 23 millionths "
+                           "of its length per degree, iron 12. Different metals grow by different amounts, "
+                           "which is why a hot aluminium ring lets go of a steel ball.",
+                "try_it": "Put 0.2 kg of 95 °C water against 0.3 kg of aluminium: look at 'Block B grows' - "
+                          "about 1300 µm per metre at its hottest.",
             },
         },
         "figures": [
@@ -287,6 +325,15 @@ LEARN = {
                         "instead of at T_eq."},
         ],
         "real_life": [
+            {"icon": "🛤️", "title": "Gaps in bridges and rails",
+             "text": "A 100 m steel bridge is about 4 cm longer on a hot summer day than on a cold winter "
+                     "night (12 millionths per metre per degree, times 100 m, times 35 °C). Expansion joints - "
+                     "the metal 'teeth' you drive over - give it room to grow.",
+             "formula": "dL = alpha * L * dT"},
+            {"icon": "🫙", "title": "A stuck jar lid",
+             "text": "Run hot water over a stuck metal lid: the metal grows more than the glass, the lid "
+                     "loosens. Heat the wrong part (the glass) and it only gets tighter.",
+             "formula": "dL = alpha * L * dT"},
             {"icon": "🏖️", "title": "Mild seaside weather",
              "text": "The sea's huge m·c means it warms and cools very slowly. Coastal towns get cooler "
                      "summers and milder winters than places far inland.",
@@ -321,6 +368,12 @@ LEARN = {
             {"title": "Tip of the iceberg", "params": {"shape": "sphere", "material": "ice", "size": 25.0, "start": 0.0}},
             {"title": "Rising through honey", "params": {"material": "rubber", "fluid": "honey", "start": -25.0}},
             {"title": "On the Moon", "params": {"g": 1.62}},
+            {"title": "Salt floats a bouncy ball", "params": {"shape": "sphere", "material": "bouncy", "size": 6.0,
+                                                               "salt": 275.0, "start": 10.0}},
+            {"title": "Aesop's crow: stones in a narrow well", "params": {"shape": "sphere", "material": "woodball",
+                                                                           "size": 8.0, "start": 15.0,
+                                                                           "vessel": "well", "depth": 20.0,
+                                                                           "extra": 1800.0}},
         ],
         "formulas": {
             "F_b = rho_fluid * V_sub * g": {
@@ -357,6 +410,20 @@ LEARN = {
                            "the push can't match the weight, so it sinks.",
                 "try_it": "Try pine wood in water (51% under), then in honey (36% under).",
             },
+            "dh = V_pushed / A": {
+                "say": "The water rises by the volume pushed aside ÷ the area of the container.",
+                "symbols": [["dh", "how much the water level rises", "m"],
+                            ["V_pushed", "volume of water pushed aside (a sinker: its whole volume; a floater: "
+                                         "only its own weight of water)", "m³"],
+                            ["A", "the container's inside area, seen from above", "m²"]],
+                "explain": "Water can't be squashed, so whatever goes in pushes the surface up - spread over "
+                           "the whole area of the container. 200 cm³ of stone lifts a 4000 cm² tank by 0.05 cm, "
+                           "but a 10 cm well (79 cm²) by 2.5 cm. A stone pushes aside its WHOLE volume; a "
+                           "floating block only pushes aside its own weight of water, so a pine block raises the "
+                           "water half as much as a stone of the same size.",
+                "try_it": "Pick the narrow well, a wooden ball, 20 cm of water: add 1800 cm³ of stones and watch "
+                          "the ball float up to 44 cm.",
+            },
         },
         "figures": [
             {"title": "Floating means the forces balance", "params": {}, "view": {"show": "forces"}, "at": 8.3,
@@ -389,6 +456,11 @@ LEARN = {
                         "the surface."},
         ],
         "real_life": [
+            {"icon": "🐦", "title": "The crow and the pitcher",
+             "text": "In Aesop's fable a thirsty crow drops pebbles into a narrow pitcher until the water rises "
+                     "within reach of its beak. Real crows and rooks solve this puzzle too - and they pick "
+                     "sinking stones over floating cork, because floaters push aside much less water.",
+             "formula": "dh = V_pushed / A"},
             {"icon": "🚢", "title": "Steel ships float",
              "text": "Steel is 8x denser than water, but a hull is mostly air inside. The ship sinks in until "
                      "it pushes aside its own weight of water - that weight is the ship's 'displacement'. It "
@@ -526,6 +598,8 @@ LEARN = {
             {"title": "Heavy vs light", "params": {"mass": 4.0}, "b": {"mass": 0.2}},
             {"title": "With air drag", "params": {"mass": 0.2, "drag": 0.01, "amplitude": 60.0}},
             {"title": "On the Moon", "params": {"g": 1.62}},
+            {"title": "Crane magnet: how hard does it pull?", "params": {"length": 1.0, "amplitude": 58.0,
+                                                                         "mass": 0.5}},
         ],
         "formulas": {
             "T = 2*pi * sqrt(L/g)": {
@@ -679,6 +753,20 @@ LEARN = {
                 "try_it": "Choose 'real (Snell)' rays: the light pulses bunch up inside the glass because "
                           "they are slower there.",
             },
+            "blur = D * |s - d_i| / d_i": {
+                "say": "A screen away from the sharp image gets a blurry patch: the further off, the bigger.",
+                "symbols": [["blur", "width of the blur circle on the screen", "cm"],
+                            ["D", "how wide the lens is (10 cm here)", "cm"],
+                            ["s", "distance from the lens to the screen", "cm"],
+                            ["d_i", "where the sharp image would be", "cm"]],
+                "explain": "All the light from one point of the candle fills the whole lens, then narrows to a "
+                           "point at d_i. A screen in front of or behind that point cuts the cone where it is "
+                           "still (or again) wide - a blur circle, by similar triangles D × |s − d_i| / d_i. On "
+                           "the screen the light lands on a patch = the candle's image + the blur. A small "
+                           "sensor catches only (sensor ÷ patch)² of it - so it needs a sharp AND small image.",
+                "try_it": "Set the screen to 74 cm and the candle (2 cm tall) to 26 cm: sharp, but 5.7 cm wide "
+                          "- a 1 cm cell gets 3%. Now candle 74 cm, screen 26 cm: sharp and 0.7 cm - it gets it all.",
+            },
         },
         "presets": [
             {"title": "Projector", "params": {"d_o": 30.0}},
@@ -687,6 +775,7 @@ LEARN = {
             {"title": "Same size at 2F", "params": {"d_o": 38.5}},
             {"title": "Glasses for short sight", "params": {"kind": "diverging", "d_o": 40.0}},
             {"title": "Diamond lens", "params": {"material": "diamond", "d_o": 20.0}},
+            {"title": "Light gate: focus on a photocell", "params": {"d_o": 74.0, "h_o": 2.0, "screen": 26.0}},
         ],
         "figures": [
             {"title": "A projector: real, upside down, bigger", "params": {}, "view": {"rays": "principal"},
@@ -724,6 +813,11 @@ LEARN = {
                         "the inner ones (spherical aberration)."},
         ],
         "real_life": [
+            {"icon": "🚪", "title": "Light gates and automatic doors",
+             "text": "A light gate shines a beam onto a photocell; anything that breaks the beam - even a "
+                     "wooden ball that no electric contact would notice - switches it. A lens focuses the lamp "
+                     "onto the small cell so it gets enough light to tell 'beam' from 'no beam'.",
+             "formula": "blur = D * |s - d_i| / d_i"},
             {"icon": "👁️", "title": "Your eye",
              "text": "The lens in your eye makes a real, upside-down image on the retina, like a camera. Your "
                      "brain flips it the right way up.",
@@ -801,6 +895,9 @@ LEARN = {
             {"title": "Heavy van", "params": {"force": 300.0, "d1": 2.0, "d2": 60.0, "mass": 2000.0}},
             {"title": "Almost the same pistons", "params": {"force": 100.0, "d1": 10.0, "d2": 12.0,
                                                             "mass": 10.0}},
+            {"title": "A steel ball rides the piston down", "params": {"push": "weight", "force": 5.0, "d1": 2.0,
+                                                                       "d2": 3.9, "mass": 1.1, "stroke": 30.0,
+                                                                       "fluid": "oil"}},
         ],
         "figures": [
             {"title": "Small push, big lift", "params": {}, "view": {}, "at": 2.6, "callouts": [
@@ -913,6 +1010,9 @@ LEARN = {
             {"title": "Over the hill", "params": {"track": "hill", "height": 4.0}},
             {"title": "Airborne!", "params": {"track": "hill", "height": 8.0}},
             {"title": "On the Moon", "params": {"g": 1.62}},
+            {"title": "Camel hump: stay on the track", "params": {"track": "camel", "object": "solid_ball",
+                                                                  "height": 1.5, "hump": 1.0, "mass": 0.5,
+                                                                  "friction": 0.01}},
         ],
         "figures": [
             {"title": "Height turns into speed", "params": {}, "view": {"arrows": "forces"}, "at": 0.75,
@@ -964,6 +1064,205 @@ LEARN = {
              "text": "Race a sliding ice cube and a rolling ball down the same ramp: the ice cube wins, "
                      "because the ball spends part of its energy on spinning.",
              "formula": "v = sqrt(2*g*h / (1 + k))"},
+        ],
+    },
+    # ------------------------------------------------------------------
+    "bounce": {
+        "big_idea": "A falling ball turns its height energy into speed. When it hits the floor it squashes and "
+                    "springs back - but never perfectly: it leaves with only a fraction e of its speed, and the "
+                    "rest of the energy becomes heat and sound. Because height goes with speed squared, every "
+                    "bounce reaches e² of the height before. And e belongs to the ball AND the floor together.",
+        "formulas": {
+            "v = sqrt(2*g*h)": {
+                "say": "Drop something from a height h and it hits the floor at this speed.",
+                "symbols": [["v", "speed when it reaches the floor", "m/s"],
+                            ["g", "gravity", "m/s²"],
+                            ["h", "height it fell", "m"]],
+                "explain": "All the height energy m·g·h turns into motion energy ½·m·v², so v = √(2·g·h). The "
+                           "mass cancels out: a steel ball and a rubber ball dropped together land together "
+                           "(until air drag matters). Four times the height only doubles the speed.",
+                "try_it": "Drop from 1 m and from 4 m and compare 'Speed hitting the floor': 4.4 and 8.8 m/s.",
+            },
+            "v_after = e * v_before": {
+                "say": "A bounce sends the ball back up with only a fraction e of the speed it came down with.",
+                "symbols": [["e", "coefficient of restitution: 1 = a perfect bounce, 0 = it just stops", ""],
+                            ["v_before", "speed hitting the floor", "m/s"],
+                            ["v_after", "speed leaving the floor", "m/s"]],
+                "explain": "While it touches the floor the ball squashes like a spring and pushes itself back. "
+                           "Some of the energy goes into heat and sound instead (you hear the bounce!). How much "
+                           "comes back depends on BOTH the ball and the floor: a rubber ball keeps 85% of its "
+                           "speed on a steel plate but only 10% in sand, and a steel ball bounces well on steel "
+                           "but poorly on wood, which dents a tiny bit.",
+                "try_it": "Keep the rubber ball and change the surface: watch e in the label under the ball.",
+            },
+            "h1 = e^2 * h0": {
+                "say": "Each bounce reaches e² times the height of the one before.",
+                "symbols": [["h0", "drop height", "m"],
+                            ["h1", "height of the first bounce", "m"],
+                            ["e²", "share of the energy the bounce keeps", ""]],
+                "explain": "Height goes with speed SQUARED (h = v²/2g). So keeping a fraction e of the speed "
+                           "keeps e² of the height: with e = 0.85 that's 0.72 - each bounce is 72% as high as "
+                           "the last. After n bounces: h_n = e^(2n) · h0. Air drag takes a few percent more, "
+                           "which is why the orange marks sit a little below the faint ticks.",
+                "try_it": "Switch 'Air drag' off: the bounces land exactly on the faint e²ⁿ ticks.",
+            },
+        },
+        "presets": [
+            {"title": "Rubber on steel", "params": {}},
+            {"title": "Steel vs foam", "params": {}, "b": {"surface": "foam_mat"}},
+            {"title": "Rubber vs steel ball", "params": {"surface": "hardwood"}, "b": {"ball": "steel"}},
+            {"title": "Into the sand", "params": {"surface": "sand"}},
+            {"title": "No air", "params": {"air": False}},
+            {"title": "On the Moon", "params": {"g": 1.62, "air": False, "height": 4.0}},
+        ],
+        "figures": [
+            {"title": "Every bounce is lower", "params": {}, "view": {"marks": "on"}, "at": 3.15,
+             "callouts": [
+                 {"x": 395, "y": 92, "text": "Dropped from 2.00 m (the dashed line)."},
+                 {"x": 488, "y": 189, "text": "1st bounce: 1.42 m - 71% of the drop height."},
+                 {"x": 488, "y": 257, "text": "Each bounce keeps about e² = 0.72 of the one before."},
+                 {"x": 296, "y": 206, "text": "Faint ticks: e²ⁿ × h0 without air. The air takes a little more."},
+                 {"x": 818, "y": 345, "text": "Grey = energy turned into heat and sound by the bounces."}],
+             "caption": "A rubber ball on a steel plate: e = 0.85, so each bounce reaches about 72% of the "
+                        "height before."},
+            {"title": "The floor matters", "params": {}, "b": {"surface": "foam_mat"}, "view": {"marks": "on"},
+             "at": 1.6, "callouts": [
+                 {"x": 420, "y": 205, "text": "A on the steel plate: back up to 1.42 m."},
+                 {"x": 600, "y": 380, "text": "B on the foam mat: only 0.40 m - the mat soaks up the energy."},
+                 {"x": 818, "y": 345, "text": "Same ball, same drop: e belongs to the ball AND the surface."}],
+             "caption": "The same rubber ball keeps 85% of its speed on steel but only 45% on a foam mat, so it "
+                        "bounces to 72% or 20% of the drop height."},
+            {"title": "Heavy isn't bouncy", "params": {"surface": "hardwood"}, "b": {"ball": "steel"},
+             "view": {"marks": "on"}, "at": 1.4, "callouts": [
+                 {"x": 420, "y": 250, "text": "A, rubber on wood: 1.10 m."},
+                 {"x": 600, "y": 330, "text": "B, steel on wood: 0.50 m - the wood dents and takes the energy."},
+                 {"x": 818, "y": 372, "text": "The steel ball had 4x the energy (10 J), but kept only a quarter of it."}],
+             "caption": "Dropped together, they land together (the mass cancels out) - but what comes back "
+                        "depends on how springy the ball-and-floor pair is, not on the mass."},
+        ],
+        "real_life": [
+            {"icon": "🎾", "title": "Tennis-ball test",
+             "text": "Official tennis balls are tested by dropping them from 254 cm onto concrete: they must "
+                     "bounce back 135-147 cm. That's e between about 0.73 and 0.76.",
+             "formula": "h1 = e^2 * h0"},
+            {"icon": "🏀", "title": "Pumping a basketball",
+             "text": "A flat basketball barely bounces; pumped up, its e rises to about 0.8. Rules say it must "
+                     "bounce to roughly half to two-thirds of its drop height on a wooden court.",
+             "formula": "v_after = e * v_before"},
+            {"icon": "🥚", "title": "Crash mats and egg drops",
+             "text": "Foam mats, airbags and sand pits are LOW-e surfaces on purpose: they take the energy "
+                     "away slowly instead of sending it back, so whatever lands on them stops gently.",
+             "formula": "v_after = e * v_before"},
+            {"icon": "🪂", "title": "How fast things land",
+             "text": "Something falling 5 m hits the ground at about 10 m/s (36 km/h) - that's why a fall from "
+                     "a first-floor window is dangerous, even though 5 m doesn't sound high.",
+             "formula": "v = sqrt(2*g*h)"},
+            {"icon": "⚙️", "title": "Ball bearings and anvils",
+             "text": "A hardened steel ball on a steel anvil is one of the bounciest pairs there is (e ≈ 0.9). "
+                     "Testers drop steel balls on metal to check how hard it is (the 'rebound hardness' test).",
+             "formula": "h1 = e^2 * h0"},
+        ],
+    },
+    # ------------------------------------------------------------------
+    "levers": {
+        "big_idea": "A weight on a beam doesn't just pull down - it TURNS the beam about the pivot, and the "
+                    "further out it hangs, the harder it turns it. That turning effect (the moment) is weight × "
+                    "distance. The beam balances when the turning effects on both sides are equal, so a small "
+                    "weight far out can hold up a big one close in. Tip the balance and the beam turns - the "
+                    "bigger the leftover turning effect, the faster.",
+        "formulas": {
+            "m1 * d1 = m2 * d2": {
+                "say": "It balances when mass × distance is the same on both sides (the principle of moments).",
+                "symbols": [["m1, m2", "the loads on the left and on the right", "kg"],
+                            ["d1, d2", "how far each hangs from the pivot", "m"]],
+                "explain": "Each side's turning effect is m·g·d, and g is the same on both sides, so it cancels: "
+                           "only mass × distance counts. 2 kg at 0.5 m balances 1 kg at 1.0 m - half the weight "
+                           "at twice the distance. That's why a child far out on a seesaw can hold up an adult "
+                           "sitting close to the middle. Where the beam's own weight sits in the middle, it "
+                           "turns neither way.",
+                "try_it": "Put 2 kg at 0.5 m on the left and 1 kg on the right, then drag the right hook until "
+                          "the HUD says 'balanced': 1.00 m.",
+            },
+            "tau = m * g * d": {
+                "say": "Turning effect (moment) = the load's weight × its distance from the pivot.",
+                "symbols": [["tau", "turning effect, moment or torque", "N m (newton metres)"],
+                            ["m * g", "the load's weight", "N"],
+                            ["d", "distance from the pivot (when the beam is level)", "m"]],
+                "explain": "Pushing a door near its hinges is hard; pushing at the handle is easy - the same "
+                           "force turns it more when it acts further from the pivot. As the beam tilts, the "
+                           "load's sideways distance from the pivot shrinks (d·cos of the tilt), so its "
+                           "turning effect shrinks a little too.",
+                "try_it": "Move the left hook out from 0.5 m to 1.0 m: its turning-effect arrow doubles, "
+                          "9.8 → 19.6 N·m.",
+            },
+            "alpha = tau_net / I": {
+                "say": "Out of balance, the beam speeds up its turning: leftover turning effect ÷ moment of inertia.",
+                "symbols": [["alpha", "angular acceleration: how fast the turning speeds up", "rad/s²"],
+                            ["tau_net", "the leftover turning effect (minus the pivot's friction)", "N m"],
+                            ["I", "moment of inertia: Σ m·r² - mass far from the pivot is harder to turn", "kg m²"]],
+                "explain": "This is Newton's F = m·a for turning. A big leftover turning effect swings the beam "
+                           "fast; mass far from the pivot (a heavy beam, loads far out) makes it sluggish. "
+                           "Just past balance the beam only creeps at first, then speeds up all the way to the "
+                           "stop - and the far end arrives fastest, because it travels furthest.",
+                "try_it": "Make the beam 5 kg instead of 1 kg: the balance doesn't change, but the beam turns "
+                          "much more slowly.",
+            },
+        },
+        "presets": [
+            {"title": "Out of balance", "params": {}},
+            {"title": "Balanced: half the mass, twice as far", "params": {"d2": 1.0}},
+            {"title": "A small weight lifts a big one", "params": {"m1": 4.0, "d1": 0.2, "m2": 1.0, "d2": 1.0}},
+            {"title": "Heavy beam: slow", "params": {"beam": 5.0}},
+            {"title": "Sticky pivot", "params": {"m2": 1.2, "d2": 0.85, "friction": 0.5}},
+            {"title": "The mill hoist (just past balance)", "params": {"m1": 0.25, "d1": 1.0, "m2": 0.55, "d2": 0.5,
+                                                                       "start": -25.0}},
+        ],
+        "figures": [
+            {"title": "Balanced: mass × distance", "params": {"d2": 1.0}, "view": {"arrows": "on"}, "at": 0.3,
+             "callouts": [
+                 {"x": 240, "y": 272, "text": "2 kg, 0.5 m from the pivot: 2 × 9.81 × 0.5 = 9.81 N·m."},
+                 {"x": 760, "y": 262, "text": "1 kg, but twice as far out: 1 × 9.81 × 1.0 = 9.81 N·m."},
+                 {"x": 440, "y": 300, "text": "Equal turning effects: the beam stays level."}],
+             "caption": "Half the weight at twice the distance gives the same turning effect, so the beam "
+                        "balances: 2 kg × 0.5 m = 1 kg × 1.0 m."},
+            {"title": "Out of balance: it turns", "params": {}, "view": {"arrows": "on"}, "at": 0.6,
+             "callouts": [
+                 {"x": 245, "y": 305, "text": "Left: 2 kg × 0.5 m = 1.00 kg·m."},
+                 {"x": 700, "y": 228, "text": "Right: 1 kg × 0.8 m = 0.80 kg·m - less."},
+                 {"x": 440, "y": 300, "text": "The left side wins and the beam turns that way, faster and faster."}],
+             "caption": "Moving the right load in to 0.8 m shrinks its turning effect: the left side wins and "
+                        "the beam turns until it hits the stop."},
+            {"title": "Just past balance", "params": {"m1": 0.25, "d1": 1.0, "m2": 0.55, "d2": 0.5, "start": -25.0},
+             "view": {"arrows": "on"}, "at": 2.0, "callouts": [
+                 {"x": 118, "y": 250, "text": "0.25 kg far out at 1.0 m: 0.25 kg·m."},
+                 {"x": 620, "y": 280, "text": "0.55 kg at 0.5 m: 0.275 kg·m - only a little more."},
+                 {"x": 440, "y": 300, "text": "A small leftover turning effect: it starts slowly and reaches "
+                                             "the stop gently."}],
+             "caption": "Just past balance the beam turns slowly and arrives gently - the trick behind the Mill "
+                        "Hoist in the Machine Works."},
+        ],
+        "real_life": [
+            {"icon": "🛝", "title": "Seesaws",
+             "text": "A heavy parent and a light child can balance on a seesaw: the child just sits further from "
+                     "the middle. Mass × distance has to match, not the masses.",
+             "formula": "m1 * d1 = m2 * d2"},
+            {"icon": "🚪", "title": "Door handles",
+             "text": "Handles sit far from the hinges on purpose. Push a door right next to its hinge and you "
+                     "need many times the force for the same turning effect.",
+             "formula": "tau = m * g * d"},
+            {"icon": "🏗️", "title": "Tower cranes",
+             "text": "A crane's short back arm carries a huge concrete counterweight; the long front arm carries "
+                     "the load. The operator may only lift heavy loads close in - the load's moment must never "
+                     "beat the counterweight's.",
+             "formula": "m1 * d1 = m2 * d2"},
+            {"icon": "🧰", "title": "Crowbars and bottle openers",
+             "text": "Push the long end of a crowbar and the short end pushes many times harder on the nail - "
+                     "the same turning effect, over a much shorter distance.",
+             "formula": "tau = m * g * d"},
+            {"icon": "⛲", "title": "Counterweight water lifts",
+             "text": "Old mills and well sweeps (shadoofs) lift with a bucket and a counterweight on a beam. "
+                     "Just a little extra weight makes it rise gently; too much and it slams into its stop.",
+             "formula": "alpha = tau_net / I"},
         ],
     },
 }

@@ -42,6 +42,9 @@
     this.active = false;           // plain wheel zooms once the canvas was clicked
     var that = this;
     this.cam.handle = function (hd) { that.handles.push(hd); };
+    // pages that let handles edit parameters replace this; elsewhere (the quiz)
+    // a dragged handle must simply do nothing instead of throwing
+    this.cam.setParams = function () {};
     this._bar();
     this._bind();
   }

@@ -17,6 +17,14 @@
     "g": 9.81,
     "v0": 18.0
    }
+  },
+  {
+   "expr": "x = v0*cos(a) * (v0*sin(a) + sqrt((v0*sin(a))^2 + 2*g*h)) / g",
+   "values": {
+    "h": 0.0,
+    "t_flight": 2.595,
+    "x": null
+   }
   }
  ],
  "frames": [

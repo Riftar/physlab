@@ -1698,7 +1698,9 @@
   "mass": 500.0,
   "need": 76.6406,
   "p_push": 244461.993,
+  "push": "person",
   "ratio": 64.0,
+  "reached": true,
   "rho": 998.0,
   "stroke": 0.2,
   "weight": 4905.0

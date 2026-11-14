@@ -25,7 +25,7 @@ lot in reality - these are sensible middles.
 
 import math
 
-from .topics import motion, pendulum, energy, buoyancy, heat, waves, optics, pressure, circuitlab
+from .topics import motion, pendulum, energy, buoyancy, heat, waves, optics, pressure, circuitlab, bounce, levers
 
 
 def item(id_, label, icon, desc, **props):
@@ -273,13 +273,51 @@ PARTS = [
     item("car_battery", "Car battery 12 V", "🔋", "internal 0.02 Ω", kind="battery", emf=12.0, r_int=0.02, short="12 V"),
 ]
 
+# bounces: the same real balls as the pendulum's bobs (+ the tennis ball);
+# what a bounce keeps comes from the ball x surface table in topics/bounce.py
+BOUNCE_BALLS = [
+    item("rubber", "Rubber ball", "🔴", "0.13 kg, 6 cm, very bouncy", mass=0.13, d=0.06, cd=0.47, color="#e0455a"),
+    item("tennis", "Tennis ball", "🎾", "58 g, 6.7 cm, felt and air inside", mass=0.058, d=0.067, cd=0.55,
+         color="#d8f03c"),
+    item("steel", "Steel ball", "⚪", "0.51 kg, 5 cm, hard", mass=0.51, d=0.05, cd=0.47, color="#c0c8d8"),
+    item("wood", "Wooden ball", "🟤", "0.16 kg, 8 cm", mass=0.16, d=0.08, cd=0.47, color="#a8703a"),
+]
+
+BOUNCE_SURFACES = [
+    item("steel_plate", "Steel plate", "🔩", "hard and springy", color="#aab3c5"),
+    item("hardwood", "Hardwood floor", "🪵", "a gym floor", color="#c98b4a"),
+    item("foam_mat", "Foam gym mat", "🟦", "soft - soaks up the bounce", color="#4f7fd8"),
+    item("sand", "Sand", "🏖️", "the ball digs in and stops", color="#e2c27a"),
+]
+
+# levers: what hangs on the beam, what the beam is, how the pivot turns
+LEVER_LOADS = [
+    item("apple", "Apple", "🍎", "0.2 kg", mass=0.2),
+    item("book", "Book", "📘", "0.8 kg", mass=0.8),
+    item("sugar", "Bag of sugar", "🛍️", "1 kg", mass=1.0),
+    item("brick", "Brick", "🧱", "2.5 kg", mass=2.5),
+    item("cat", "Cat", "🐈", "4 kg", mass=4.0),
+    item("melon", "Watermelon", "🍉", "6 kg", mass=6.0),
+]
+BEAMS = [
+    item("pole", "Bamboo pole", "🎋", "0.5 kg", mass=0.5),
+    item("plank", "Wooden plank", "🪵", "3 kg", mass=3.0),
+    item("bar", "Steel bar", "🔩", "12 kg", mass=12.0),
+]
+PIVOTS = [
+    item("oiled", "Oiled bearing", "⚙️", "hardly any friction (0.01 N·m)", friction=0.01),
+    item("wood", "Wooden peg", "🪵", "some friction (0.2 N·m)", friction=0.2),
+    item("rusty", "Rusty hinge", "🟫", "lots of friction (1.5 N·m)", friction=1.5),
+]
+
 CATALOGS = {
     "planets": PLANETS, "weather": WEATHER, "wind_dir": WIND_DIR, "balls": BALLS, "bobs": BOBS,
     "ramp_objects": RAMP_OBJECTS, "surfaces": SURFACES, "floaters": FLOATERS, "liquids": LIQUIDS,
     "things": THINGS, "sources": SOURCES, "rooms": ROOMS, "insulation": INSULATION, "ropes": ROPES,
     "pulls": PULLS, "rope_ends": ROPE_ENDS, "mediums": MEDIUMS, "shakes": SHAKES, "lenses": LENSES,
     "candles": CANDLES, "jacks": JACKS, "loads": LOADS, "pushers": PUSHERS, "hydraulic": HYDRAULIC,
-    "parts": PARTS,
+    "parts": PARTS, "bounce_balls": BOUNCE_BALLS, "bounce_surfaces": BOUNCE_SURFACES,
+    "lever_loads": LEVER_LOADS, "beams": BEAMS, "pivots": PIVOTS,
 }
 BY_ID = {name: {it["id"]: it for it in items} for name, items in CATALOGS.items()}
 
@@ -338,6 +376,36 @@ def _parallel():
 
 
 SANDBOX = {
+    "bounce": {
+        "intro": "Drop up to two real balls onto a surface, on any planet. How high each bounce gets depends on "
+                 "the ball AND on what it lands on - and on the air.",
+        "fields": [obj("balls", "Balls (pick 1 or 2)", "bounce_balls", ["rubber"], 2),
+                   choice("surface", "Lands on", "bounce_surfaces", "steel_plate"),
+                   choice("planet", "Planet", "planets", "earth"),
+                   num("height", "Drop height", 0.2, 4.0, 2.0, "m", 0.05)],
+        "presets": [{"title": "Rubber vs steel", "world": {"balls": ["rubber", "steel"]}},
+                    {"title": "Steel on wood", "world": {"balls": ["steel"], "surface": "hardwood"}},
+                    {"title": "Tennis ball test (2.54 m)", "world": {"balls": ["tennis"], "surface": "hardwood",
+                                                                    "height": 2.55}},
+                    {"title": "Into the sand", "world": {"balls": ["rubber", "wood"], "surface": "sand"}},
+                    {"title": "Bounce on the Moon", "world": {"balls": ["rubber"], "planet": "moon", "height": 4.0}}],
+    },
+    "levers": {
+        "intro": "Hang two everyday things on a 2.2 m beam, pick the beam and the pivot, and slide the hooks "
+                 "(or drag them on the beam). Does it balance - and on which planet does it matter?",
+        "fields": [obj("left", "On the left", "lever_loads", "brick"), obj("right", "On the right", "lever_loads", "sugar"),
+                   choice("beam", "Beam", "beams", "plank"), choice("pivot", "Pivot", "pivots", "oiled"),
+                   choice("planet", "Planet", "planets", "earth"),
+                   num("d1", "Left hook distance", 0.05, 1.1, 0.4, "m", 0.05),
+                   num("d2", "Right hook distance", 0.05, 1.1, 1.0, "m", 0.05)],
+        "presets": [{"title": "A brick and a bag of sugar", "world": {}},
+                    {"title": "Balance a cat with apples?", "world": {"left": "cat", "right": "apple",
+                                                                      "d1": 0.05, "d2": 1.0}},
+                    {"title": "Rusty hinge: almost balanced", "world": {"left": "brick", "right": "sugar", "d1": 0.4,
+                                                                        "d2": 0.95, "pivot": "rusty"}},
+                    {"title": "On the Moon: same balance, slower", "world": {"planet": "moon", "d1": 0.4,
+                                                                              "d2": 0.9}}],
+    },
     "motion": {
         "intro": "Pick up to two balls, choose the planet and the weather, then throw. Every ball keeps "
                  "its real mass, size and shape - only the world around it changes.",
@@ -677,6 +745,29 @@ def run(topic, world):
         res["params"] = p
         res["viz"]["load_label"] = ld["label"]
         return {"runs": [{"label": j["label"], "result": res}], "notes": []}
+    if topic == "bounce":
+        pl, surf = C["planets"][w["planet"]], C["bounce_surfaces"][w["surface"]]
+        runs = []
+        for bid in w["balls"]:
+            b = C["bounce_balls"][bid]
+            res = bounce.simulate(b, surf, w["height"], pl["g"], pl["rho_air"])
+            res["params"] = {"ball": bid, "surface": surf["id"], "height": w["height"], "g": pl["g"],
+                             "air": pl["rho_air"] > 0}
+            res["viz"]["theme"] = {"sky": pl["sky"]}
+            runs.append({"label": b["label"], "result": res})
+        return {"runs": runs, "notes": []}
+    if topic == "levers":
+        l, r, bm, pv, pl = (C["lever_loads"][w["left"]], C["lever_loads"][w["right"]], C["beams"][w["beam"]],
+                            C["pivots"][w["pivot"]], C["planets"][w["planet"]])
+        p = {"m1": l["mass"], "d1": w["d1"], "m2": r["mass"], "d2": w["d2"], "beam": bm["mass"],
+             "friction": pv["friction"], "start": 0.0, "g": pl["g"]}
+        res = levers.run(p)
+        res["params"] = p
+        res["viz"]["theme"] = {"sky": pl["sky"]}
+        res["viz"]["names"] = [l["label"], r["label"]]
+        return {"runs": [{"label": l["label"] + " vs " + r["label"], "result": res}],
+                "notes": ["Gravity doesn't change the balance (it is on both sides), only how fast it turns."]
+                if pl["id"] != "earth" else []}
     if topic == "circuits":
         lim = CIRCUIT_LIMITS
         parts = []

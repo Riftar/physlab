@@ -20,8 +20,8 @@
      view.* client-side view options (arrows on/off, ...)
      at     fast-forwards the simulation to that time and pauses there
    The hash follows your changes, so any set-up can be shared; presets
-   and "Try this setup" are such links. #/quiz... and #/sandbox... routes
-   belong to quiz.js and sandbox.js. When a route has finished
+   and "Try this setup" are such links. #/quiz..., #/sandbox... and #/game...
+   routes belong to quiz.js, sandbox.js and game.js. When a route has finished
    loading (and seeking), <html data-sim-ready="1">. */
 (function () {
   "use strict";
@@ -48,6 +48,7 @@
 
   function showPicker() {
     closePage();
+    U.clearReturn();
     app.innerHTML = "";
     var cta = U.el("button", "quizcta");
     cta.type = "button";
@@ -67,8 +68,18 @@
                          "ramps you shape, circuits you wire."));
     sb.appendChild(stx);
     sb.addEventListener("click", function () { location.hash = "#/sandbox"; });
+    var gm = U.el("button", "quizcta gamecta");
+    gm.type = "button";
+    gm.setAttribute("data-testid", "game-cta");
+    gm.appendChild(U.el("span", "qi", "🏭"));
+    var gtx = U.el("span");
+    gtx.appendChild(U.el("b", null, "The Machine Works (game)"));
+    gtx.appendChild(U.el("span", null, " - tune a Rube Goldberg machine so the ball gets from A to B. Three halls: " +
+                         "rubber, steel and wood."));
+    gm.appendChild(gtx);
+    gm.addEventListener("click", function () { location.hash = "#/game"; });
     var ctas = U.el("div", "ctas");
-    ctas.appendChild(cta); ctas.appendChild(sb);
+    ctas.appendChild(cta); ctas.appendChild(sb); ctas.appendChild(gm);
     app.appendChild(ctas);
     app.appendChild(U.topicCards(state.topics, function (t) { location.hash = "#/" + t.id; }));
     document.title = "physlab - see the formula happen";
@@ -80,6 +91,11 @@
     if (r && (r.id === "quiz" || r.id.indexOf("quiz/") === 0)) {
       closePage();
       state.page = PL.quiz.open(app, r.id.slice(5));
+      return;
+    }
+    if (r && (r.id === "game" || r.id.indexOf("game/") === 0)) {
+      closePage();
+      state.page = PL.gameUI.open(app);
       return;
     }
     if (r && (r.id === "sandbox" || r.id.indexOf("sandbox/") === 0)) {
@@ -132,6 +148,8 @@
     // components
     var L = U.simLayout(t, function () { location.hash = "#/"; });
     L.left.insertBefore(PL.sandboxUI.modeToggle(t.id, "experiment"), L.left.querySelector("h2"));
+    var ret = U.returnBanner();                  // came here from a game station's "Open in the lab"?
+    if (ret) L.left.insertBefore(ret, L.left.firstChild);
     var stage = new PL.Stage(880, 500);
     var bar = U.PlayBar(scene.options, view, {
       play: function () { player.toggle(); },

@@ -28,7 +28,9 @@ dependencies — Python stdlib server, vanilla JS/canvas client.
   and drag arrows share one newton scale; the dashed no-air parabola
   shows what drag costs. **Compare mode** runs two balls (A/B) with
   independent settings on the same axes and flags whether it's a fair
-  test (only one setting changed).
+  test (only one setting changed). A **launch height** throws from a tower
+  (no-air distance `x = v0·cos a·(v0·sin a + √((v0·sin a)² + 2gh))/g`), and
+  the wind goes up to a 20 m/s gale.
 - **Heat Transfer** — two touching blocks, each its own material (water
   in a glass tank, aluminum, iron, copper) drawn at its true relative
   size `side = ∛(m/ρ)`, optional heat leak to the room. Atoms jiggle
@@ -46,7 +48,9 @@ dependencies — Python stdlib server, vanilla JS/canvas client.
   free-body diagram of every force, or water-pressure arrows (`p = ρgh`)
   showing why the bottom pushes harder than the top. A measuring
   cylinder collects the "liquid pushed aside". Floaters settle at
-  `V_sub/V = ρ_obj/ρ_liquid` (g cancels - try the Moon).
+  `V_sub/V = ρ_obj/ρ_liquid` (g cancels - try the Moon). Pick a **narrow
+  well** (10 cm across), the starting water depth and the stones already on
+  the bottom, and the water rises by `dh = V_pushed/A` - Aesop's crow.
 - **Waves** — shake one end of a rope. `v = √(T/μ)`, `v = f·λ`,
   resonances `f_n = n·v/(2L)` (fixed end) or `(2n-1)·v/(4L)` (free end);
   or an endless rope with no echo. Solved with finite differences at
@@ -70,7 +74,9 @@ dependencies — Python stdlib server, vanilla JS/canvas client.
   the focal point). Show the three textbook rays, or real rays traced
   through the thick glass with Snell's law (total internal reflection
   included). Light pulses slow down inside the glass (`n = c/v`).
-  **Drag the candle's flame** to move it.
+  **Drag the candle's flame** to move it. Put a **screen** behind the lens:
+  away from the image the light spreads into a blur circle
+  `D·|s − d_i|/d_i`, and a 1 cm photocell catches only `(cell/patch)²` of it.
 - **Pressure** — a hydraulic lift: `p = F/A`, Pascal's `F2 = F1·A2/A1`,
   incompressible `d2 = d1·A1/A2`, and `F1·d1 = F2·d2`. The push is a
   person's (weaker when faster), the liquid's own weight counts, and
@@ -82,11 +88,27 @@ dependencies — Python stdlib server, vanilla JS/canvas client.
   the track's push `N = m(g cosφ + v²/r)` (too fast over the hill and
   the object flies off) and friction heat `μN·distance`. Stacked bars
   show height, motion, spin and heat. **Drag the start flag**; compare a
-  box and a ball side by side.
+  box and a ball side by side. A small **camel-hump** track (a hump whose
+  crest has a fixed radius R: drag the crest) shows the `v ≤ √(g·R)` limit
+  for staying on the track.
+- **Bounces** — drop a real ball (rubber, tennis, steel, wood) on a steel
+  plate, hardwood, a foam mat or sand. A bounce returns a fraction `e` of
+  the speed, and `e` belongs to the ball AND the surface, so each bounce
+  reaches `h1 = e²·h0` (`v = √(2gh)` on the way down). The marks show each
+  bounce against the faint no-air `e²ⁿ·h0` ticks; air drag can be switched
+  off; energy bars book height, motion and the heat + sound of every bounce.
+  Runs on the shared ball tracer (`topics/tracer.py`: the projectile
+  engine's Heun + drag + wind, plus obstacles with restitution).
+- **Levers & Moments** — a 2.2 m beam on a pivot with a load hanging on
+  each side (drag the hooks along the beam). The turning effect is
+  `τ = m·g·d`; it balances when `m1·d1 = m2·d2` (g cancels); out of balance
+  it turns by `α = τ_net/I` with `I = Σ m·r²` against the pivot's friction,
+  until it hits a stop - the readouts give the balancing load, the time and
+  the speed at the stop, and the energy books balance.
 
 ### Challenges (quiz)
 
-`#/quiz` - three challenges per experiment (27 in all): "set the right
+`#/quiz` - three challenges per experiment (33 in all): "set the right
 value to make the experiment do X", e.g. *what launch speed lands the
 ball on the 20 m mark?* Students can only enter the parameters the
 question allows. The experiment then **runs with their answer** (with
@@ -170,6 +192,62 @@ world that worked. Worlds are deep links too
 API: `GET /api/sandbox` (catalogs, fields, presets), `POST
 /api/sandbox/run {topic, world}`.
 
+### The Machine Works (game)
+
+`#/game` - a Rube Goldberg game built on the lab's engines (design:
+`docs/game/GDD-machine-works.md`). The student can't touch the ball: they
+tune the machine - a hatch height, bags of salt, a hump, a spring and an
+angle - press run, and the real simulations decide what happens. **Hall 1,
+the Bounce Factory** (rubber ball) is playable: 1.1 Bounce Flap (bounces,
+`h1 = e²h0`), 1.2 Salt Canal (floating in salt water), 1.3 Camel Hump
+(energy, don't fly off: `v ≤ √(gR)`), 1.4 Spring Cannon (spring energy into
+a projectile, trick shots off the wall), then the whole machine A → B.
+**Hall 2, the Foundry** (steel ball) opens once Hall 1 is cleared: 2.1 Hot
+Ring (heat balance and thermal expansion: heat the ring, not the ball),
+2.2 Trapdoor Latch (the steel ball closes the circuit: `I = V/R_total`
+between the latch's pull-in and the fuse), 2.3 Hydraulic Gate (the ball's
+weight drives a hydraulic lift: `F2 = F1·A2/A1` against `x2 = x1·A1/A2`),
+2.4 Magnet Swing (a crane's pendulum: `T = mg(3 − 2cos θ)` must stay under
+the magnet's grip, then a throw into the ladle). Slow physics (the ring
+heating for 20 s) plays as a time-lapse. **Hall 3, Millbrook Mill** (wooden
+ball): 3.1 Crow's Well (drop stones in a narrow well until the floating ball
+reaches the paddles: `dh = V/A`, and a floating block only pushes aside its
+own weight of water), 3.2 Fan Jump (a winnowing fan's wind blows the light
+ball across the mill race: drag does it, and the simulation is the tool),
+3.3 Light Gate (the wooden ball can't close a contact, so a lens must focus
+the lamp onto a photocell: of the two sharp positions only the small image
+works), 3.4 Mill Hoist (a counterweight beam: balance `m1·d1 = m2·d2`, then
+just a little more - too much and it flings the ball).
+
+- Every station is graded by running its engine; each has three stars
+  (it works / efficient / mastery), a prediction bonus, three hint tiers
+  (the Blueprint only after two failed runs), and **Open in the lab** links
+  that reproduce the station in the matching experiment.
+- Every student gets a seeded **variant** of the station facts (the same
+  method works, copied numbers don't); `?practice=1&v=0..4` plays any
+  variant without saving. The same players and SQLite file as the quiz;
+  scores are derived from the recorded runs.
+- The correct setting for every station and variant, with game and lab
+  deep links, is saved by `tools/make_game_solutions.py`
+  (`physlab/game/data/<hall>.json`, `docs/game/hall1-solutions.md`,
+  `docs/game/hall2-solutions.md`, `docs/game/hall3-solutions.md`).
+- Every working run also **scores 0-1000** (1000 = the best possible for
+  your variant: the lowest drop, the cheapest salt-and-time delivery, the
+  fastest safe run, a dead-centre trick shot); personal bests and a top-5
+  per station on this computer make a highscore to chase.
+- **Test mode (the default for now):** every hall and every station is
+  open, so you can jump straight into any hall. The classroom order - a hall
+  opens when every station of the one before it works, a station when the
+  one before it works - comes back with `PHYSLAB_GAME_LOCKS=on
+  python3 -m physlab.server 8600`. The station's settings and the Test / Run machine buttons sit right
+  under the machine. The camera can follow the ball; a share box copies a link to the
+  exact setup; lab pages offer a way back to the station.
+- Progress and to-dos: `docs/game/IMPLEMENTATION-hall1.md`,
+  `docs/game/IMPLEMENTATION-hall2.md`, `docs/game/IMPLEMENTATION-hall3.md`.
+
+API: `GET /api/game`, `GET /api/game/hall`, `POST /api/game/run`,
+`POST /api/game/hint`.
+
 ### Learn panel
 
 Under every experiment there is a panel that explains it:
@@ -227,7 +305,7 @@ points and the circuit board's gaps all use this.
 ## Quick start
 
 ```sh
-python3 -m unittest discover -s tests   # 263 tests, offline, loopback only
+python3 -m unittest discover -s tests   # 459 tests, offline, loopback only
 python3 -m physlab.server 8600          # then open http://127.0.0.1:8600
 ```
 
@@ -275,12 +353,32 @@ your machine.
 - `www/js/core.js` — pure helpers (frame interpolation, deep links,
   sandbox links, the ramp spline), unit tested with Node by `tests/test_client.py` (skipped without Node)
 - `tools/make_sprites.py` — regenerates the procedural sprites (pendulum
-  bob, pivot clamp, wave shaker, hand, candle, eye, car, crate) in the
-  same flat style; a
+  bob, pivot clamp, wave shaker, hand, candle, eye, car, crate; the game's
+  toy hopper, salt bag, spring cannon, toy box, Gizmo, ore cart, kettle,
+  latch coil, crane magnet, ladle, grain sack, hay cart, bucket and
+  millstone hopper) and the Bounces and Levers & Moments icons in the same
+  flat style; a
   dev-time script (needs Pillow), the app itself stays dependency-free
+- `physlab/game/` — the game: `common.py` (knob validation, variants,
+  star rules), `kit.py` (what every hall shares: the saved table, texts,
+  scores, the machine run with connectors and time-lapse zones),
+  `bounce_factory.py`, `foundry.py` and `mill.py` (each hall's stations
+  and layout),
+  `service.py` (the API logic), `db.py` (its SQLite tables), and
+  `data/` (the generated correct settings); `www/js/game.js` the game
+  pages, `www/js/scene_game.js` the hall engine (camera, ball, HUD,
+  time-lapse, a shared drawing kit) and one painter per hall
+  (`www/js/hall_bounce.js`, `www/js/hall_foundry.js`, `www/js/hall_mill.js`);
+  `tools/make_game_solutions.py` regenerates the correct settings
+- `docs/game/` — the game design document, its design calculator
+  (`level_math.py`), the checklists of the three halls and their
+  correct-settings tables
 - `tests/` — physics postconditions, API edges, determinism gates,
   and a fixture generator (`tests/gen_fixtures.py`) whose output must
-  regenerate byte-identically
+  regenerate byte-identically; the game's stations and knobs
+  (`test_game.py`, `test_foundry.py`, `test_mill.py`; the Hall 3 lab work in
+  `test_levers.py`), its API (`test_game_api.py`) and an end-to-end browser
+  test (`test_game_browser.py`, Playwright; skipped without it)
 
 ## Design rules
 

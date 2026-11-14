@@ -1,0 +1,418 @@
+{
+ "1.1": {
+  "title": "Bounce Flap",
+  "p": 0.19672131147540983,
+  "bits": 2.34577483684173,
+  "p_mastery": 0.01639344262295082,
+  "bits_mastery": 5.930737337562886,
+  "windows": {
+   "steel_plate": [
+    [
+     2.15,
+     3.2
+    ]
+   ],
+   "hardwood": [
+    [
+     2.75,
+     4.0
+    ]
+   ],
+   "foam_mat": [],
+   "sand": []
+  },
+  "space": 244,
+  "variants": {
+   "flap=1.4": {
+    "hatch": 2.0,
+    "pad": "steel_plate"
+   },
+   "flap=1.6": {
+    "hatch": 2.3,
+    "pad": "steel_plate"
+   }
+  },
+  "par": 2
+ },
+ "1.2": {
+  "title": "Salt Canal",
+  "p": 0.47619047619047616,
+  "bits": 1.070389327891398,
+  "p_mastery": 0.047619047619047616,
+  "bits_mastery": 4.392317422778761,
+  "windows": {
+   "None": [
+    [
+     11,
+     20
+    ]
+   ]
+  },
+  "space": 21,
+  "variants": {
+   "litres=36.0": {
+    "bags": 10
+   },
+   "litres=44.0": {
+    "bags": 12
+   }
+  },
+  "par": 2
+ },
+ "1.3": {
+  "title": "Camel Hump",
+  "p": 0.40425531914893614,
+  "bits": 1.306661338234052,
+  "p_mastery": 0.04964539007092199,
+  "bits_mastery": 4.332196430341189,
+  "windows": {
+   "None": [
+    [
+     0.84,
+     1.4
+    ]
+   ]
+  },
+  "space": 141,
+  "variants": {
+   "h0=1.4": {
+    "hump": 0.75
+   },
+   "h0=1.6": {
+    "hump": 0.93
+   }
+  },
+  "par": 2
+ },
+ "1.4": {
+  "title": "Spring Cannon",
+  "p": 0.074,
+  "bits": 3.7563309190331373,
+  "p_mastery": 0.028,
+  "bits_mastery": 5.158429362604483,
+  "windows": {
+   "compression | {'angle': 45.0}": [
+    [
+     12.7,
+     13.5
+    ],
+    [
+     15.8,
+     16.1
+    ],
+    [
+     16.3,
+     16.4
+    ]
+   ],
+   "compression | {'angle': 60.0}": [
+    [
+     12.4,
+     12.5
+    ],
+    [
+     12.9,
+     13.6
+    ],
+    [
+     17.0,
+     17.3
+    ]
+   ]
+  },
+  "space": 11041,
+  "variants": {
+   "dx=2.4": {
+    "compression": 17.8,
+    "angle": 64.0
+   },
+   "dx=2.8": {
+    "compression": 17.7,
+    "angle": 31.0
+   }
+  },
+  "par": 3
+ },
+ "2.1": {
+  "title": "Hot Ring",
+  "p": 0.22875816993464052,
+  "bits": 2.1281048257476853,
+  "p_mastery": 0.0196078431372549,
+  "bits_mastery": 5.672425341971495,
+  "windows": {
+   "ring": [
+    [
+     0.16,
+     0.5
+    ]
+   ],
+   "ball": [],
+   "both": []
+  },
+  "space": 153,
+  "variants": {
+   "gap_um=50.0": {
+    "target": "ring",
+    "water": 0.1
+   },
+   "gap_um=70.0": {
+    "target": "ring",
+    "water": 0.3
+   }
+  },
+  "par": 2
+ },
+ "2.2": {
+  "title": "Trapdoor Latch",
+  "p": 0.2995049504950495,
+  "bits": 1.7393482454772002,
+  "p_mastery": 0.13613861386138615,
+  "bits_mastery": 2.876851769227135,
+  "windows": {
+   "aa": [],
+   "lantern": [
+    [
+     0.0,
+     11.5
+    ]
+   ],
+   "nine_v": [
+    [
+     0.0,
+     20.0
+    ]
+   ],
+   "car_battery": [
+    [
+     4.0,
+     31.5
+    ]
+   ]
+  },
+  "space": 404,
+  "variants": {
+   "coil_ohm=7.0": {
+    "battery": "car_battery",
+    "R": 19.5
+   },
+   "coil_ohm=9.0": {
+    "battery": "nine_v",
+    "R": 12.5
+   },
+   "pull_in=0.28": {
+    "battery": "car_battery",
+    "R": 14.0
+   },
+   "pull_in=0.32": {
+    "battery": "car_battery",
+    "R": 17.0
+   }
+  },
+  "par": 2
+ },
+ "2.3": {
+  "title": "Hydraulic Gate",
+  "p": 0.14814814814814814,
+  "bits": 2.7548875021634687,
+  "p_mastery": 0.09876543209876543,
+  "bits_mastery": 3.3398500028846247,
+  "windows": {
+   "None": [
+    [
+     3.3,
+     4.4
+    ]
+   ]
+  },
+  "space": 81,
+  "variants": {
+   "gate_kg=0.9": {
+    "d2": 3.1
+   },
+   "gate_kg=1.1": {
+    "d2": 3.4
+   }
+  },
+  "par": 2
+ },
+ "2.4": {
+  "title": "Magnet Swing",
+  "p": 0.056,
+  "bits": 4.158429362604483,
+  "p_mastery": 0.024,
+  "bits_mastery": 5.380821783940931,
+  "windows": {
+   "angle | {'length': 0.6}": [
+    [
+     73.0,
+     73.0
+    ]
+   ],
+   "angle | {'length': 0.8}": [
+    [
+     63.0,
+     69.0
+    ]
+   ],
+   "angle | {'length': 1.0}": [
+    [
+     55.0,
+     61.0
+    ]
+   ],
+   "angle | {'length': 1.5}": [
+    [
+     45.0,
+     49.0
+    ]
+   ],
+   "angle | {'length': 2.0}": [
+    [
+     39.0,
+     42.0
+    ]
+   ]
+  },
+  "space": 2673,
+  "variants": {
+   "ladle=1.4": {
+    "length": 0.65,
+    "angle": 71.0
+   },
+   "ladle=1.6": {
+    "length": 1.25,
+    "angle": 57.0
+   }
+  },
+  "par": 4
+ },
+ "3.1": {
+  "title": "Crow's Well",
+  "p": 0.06504065040650407,
+  "bits": 3.94251450533924,
+  "p_mastery": 0.008130081300813009,
+  "bits_mastery": 6.94251450533924,
+  "windows": {
+   "stone": [
+    [
+     9,
+     10
+    ]
+   ],
+   "bearing": [
+    [
+     26,
+     31
+    ]
+   ],
+   "block": []
+  },
+  "space": 123,
+  "variants": {
+   "depth0=18.0": {
+    "item": "stone",
+    "count": 10
+   },
+   "depth0=22.0": {
+    "item": "stone",
+    "count": 8
+   }
+  },
+  "par": 3
+ },
+ "3.2": {
+  "title": "Fan Jump",
+  "p": 0.12195121951219512,
+  "bits": 3.035623909730721,
+  "p_mastery": 0.07317073170731707,
+  "bits_mastery": 3.7725895038969277,
+  "windows": {
+   "None": [
+    [
+     15.0,
+     17.0
+    ]
+   ]
+  },
+  "space": 41,
+  "variants": {
+   "cart=1.9": {
+    "wind": 13.5
+   },
+   "cart=2.05": {
+    "wind": 16.0
+   }
+  },
+  "par": 3
+ },
+ "3.3": {
+  "title": "Light Gate",
+  "p": 0.04419889502762431,
+  "bits": 4.499845887083206,
+  "p_mastery": 0.016574585635359115,
+  "bits_mastery": 5.91488338636205,
+  "windows": {
+   "None": [
+    [
+     72.5,
+     76.0
+    ]
+   ]
+  },
+  "space": 181,
+  "variants": {
+   "bench=95.0": {
+    "d_o": 66.5
+   },
+   "bench=105.0": {
+    "d_o": 78.0
+   }
+  },
+  "par": 4
+ },
+ "3.4": {
+  "title": "Mill Hoist",
+  "p": 0.04,
+  "bits": 4.643856189774724,
+  "p_mastery": 0.012,
+  "bits_mastery": 6.380821783940931,
+  "windows": {
+   "water | {'hook': 0.3}": [
+    [
+     0.68,
+     0.82
+    ]
+   ],
+   "water | {'hook': 0.5}": [
+    [
+     0.33,
+     0.42
+    ]
+   ],
+   "water | {'hook': 0.7}": [
+    [
+     0.18,
+     0.25
+    ]
+   ],
+   "water | {'hook': 1.0}": [
+    [
+     0.07,
+     0.12
+    ]
+   ]
+  },
+  "space": 3417,
+  "variants": {
+   "arm=0.9": {
+    "hook": 0.8,
+    "water": 0.15
+   },
+   "arm=1.1": {
+    "hook": 0.55,
+    "water": 0.36
+   }
+  },
+  "par": 4
+ }
+}

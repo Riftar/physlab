@@ -523,7 +523,30 @@
     return grid;
   }
 
-  window.PL.ui = { simLayout: simLayout, presetBar: presetBar, goRoute: goRoute, ControlPanel: ControlPanel,
+  /* "back to the game" banner: the game stores where the student came from
+     (sessionStorage "physlab.return" = {hash, label}) when they open a lab
+     link; experiment and sandbox pages show this button until they go back */
+  var RETURN_KEY = "physlab.return";
+  function setReturn(hash, label) {
+    try { sessionStorage.setItem(RETURN_KEY, JSON.stringify({ hash: hash, label: label })); } catch (e) {}
+  }
+  function takeReturn() {
+    try { var r = JSON.parse(sessionStorage.getItem(RETURN_KEY) || "null"); return r && r.hash ? r : null; }
+    catch (e) { return null; }
+  }
+  function clearReturn() { try { sessionStorage.removeItem(RETURN_KEY); } catch (e) {} }
+  function returnBanner() {
+    var r = takeReturn();
+    if (!r || r.hash.indexOf("#/game") !== 0) return null;
+    var b = el("button", "returnbtn", "🏭 Back to the Machine Works · " + r.label);
+    b.type = "button";
+    b.setAttribute("data-testid", "return-to-game");
+    b.title = "back to the station, with your settings";
+    b.addEventListener("click", function () { clearReturn(); goRoute(r.hash); });
+    return b;
+  }
+
+  window.PL.ui = { setReturn: setReturn, clearReturn: clearReturn, returnBanner: returnBanner, simLayout: simLayout, presetBar: presetBar, goRoute: goRoute, ControlPanel: ControlPanel,
                    ComparePanel: ComparePanel, PlayBar: PlayBar, ResultsPanel: ResultsPanel,
                    RUN_COLORS: RUN_COLORS, RUN_LABELS: RUN_LABELS,
                    controls: controls, formulaPanel: formulaPanel, learnPanel: learnPanel, readouts: readouts,

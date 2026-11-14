@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from physlab import spec
 from physlab.server import validate
-from physlab.topics import circuits, motion, heat, buoyancy, waves, pendulum, optics, pressure, energy
+from physlab.topics import circuits, motion, heat, buoyancy, waves, pendulum, optics, pressure, energy, bounce, levers
 
 FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 # optional argv[1]: alternate output dir (used by the regen test)
@@ -30,10 +30,14 @@ GOLDEN = {
     "pressure": {"force": 120.0, "d1": 2.5, "d2": 20.0, "mass": 500.0, "stroke": 20.0, "fluid": "water"},
     "energy": {"track": "hill", "object": "solid_ball", "height": 6.0, "mass": 10.0, "friction": 0.02,
                "g": 9.81},
+    "bounce": {"ball": "tennis", "surface": "hardwood", "height": 2.5, "g": 9.81, "air": True},
+    "levers": {"m1": 0.25, "d1": 1.0, "m2": 0.55, "d2": 0.5, "beam": 1.0, "friction": 0.03, "start": -25.0,
+               "g": 9.81},
 }
 RUNNERS = {"circuits": circuits.run, "motion": motion.run, "heat": heat.run,
            "buoyancy": buoyancy.run, "waves": waves.run, "pendulum": pendulum.run,
-           "optics": optics.run, "pressure": pressure.run, "energy": energy.run}
+           "optics": optics.run, "pressure": pressure.run, "energy": energy.run,
+           "bounce": bounce.run, "levers": levers.run}
 
 
 def main():

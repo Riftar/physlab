@@ -32,6 +32,13 @@
     "n": 1.62,
     "v": 185057
    }
+  },
+  {
+   "expr": "blur = D * |s - d_i| / d_i",
+   "values": {
+    "D": 10.0,
+    "s": null
+   }
   }
  ],
  "frames": [
@@ -630,6 +637,7 @@
     "virt": null
    }
   ],
+  "screen": null,
   "v_light": 185057.1
  }
 }

@@ -36,6 +36,12 @@ and its small bobbing has stiffness k = rho g A_w / (1 - A_w / A_tank)
 Note g cancels in V_sub / V: gravity changes how fast things move, never
 how deep a floater sits.
 
+The vessel (optional params): the glass tank (1.0 x 0.4 m, the default) or
+a narrow round well (10 cm across, 70 cm deep - the game's Crow's Well),
+any starting water depth, and `extra` cm^3 of stones (or anything) already
+lying on the bottom: they push the water up by extra / A before the object
+goes in (Aesop's crow: a narrow well rises fast).
+
 RK4 with a step set by the fastest time scale. Same validated params ->
 byte-identical frames.
 """
@@ -53,6 +59,12 @@ ZETA = 0.08
 RESTITUTION = 0.3
 T_MAX = 20.0
 SETTLE_HOLD = 0.3       # s the object must stay settled before the run ends
+WELL_D = 0.10           # m: the narrow well's inside diameter
+VESSELS = {
+    "tank": {"kind": "tank", "w": TANK_W, "depth": TANK_D, "h": TANK_H, "area": TANK_AREA},
+    "well": {"kind": "well", "w": WELL_D, "depth": WELL_D, "h": 0.70, "area": math.pi * (WELL_D / 2.0) ** 2},
+}
+WELL_FIT = {"sphere": 0.09, "cube": 0.07}    # m: the biggest ball / block that goes down the 10 cm well
 
 
 # ---------------- geometry ----------------
@@ -180,16 +192,17 @@ def verdict(rho_obj, rho_liq):
     return "floats" if rho_obj < rho_liq else "sinks"
 
 
-def equilibrium(shape, s, rho_obj, rho_liq):
-    """Resting state: verdict, submerged fraction, h, level, bottom height."""
+def equilibrium(shape, s, rho_obj, rho_liq, fill=FILL, tank_area=TANK_AREA):
+    """Resting state: verdict, submerged fraction, h, level, bottom height.
+    fill: the water level before the object goes in (stones included)."""
     v = volume(shape, s)
     state = verdict(rho_obj, rho_liq)
     if state == "floats":
         frac = rho_obj / rho_liq
         h = float_depth(shape, s, frac)
-        level = FILL + frac * v / TANK_AREA
+        level = fill + frac * v / tank_area
         return {"state": state, "fraction": frac, "h": h, "level": level, "y": level - h}
-    level = FILL + v / TANK_AREA
+    level = fill + v / tank_area
     return {"state": state, "fraction": 1.0, "h": s, "level": level,
             "y": 0.0 if state == "sinks" else None}
 
@@ -199,13 +212,13 @@ def bob_stiffness(shape, s, h, rho_liq, g, tank_area=TANK_AREA):
     return rho_liq * g * aw / (1.0 - aw / tank_area)
 
 
-def bob_period(shape, s, rho_obj, rho_liq, g):
+def bob_period(shape, s, rho_obj, rho_liq, g, tank_area=TANK_AREA):
     """Small-oscillation (undamped) bobbing period of a floater."""
-    eq = equilibrium(shape, s, rho_obj, rho_liq)
+    eq = equilibrium(shape, s, rho_obj, rho_liq, tank_area=tank_area)
     if eq["state"] != "floats":
         return None
     m_eff = rho_obj * volume(shape, s) + C_A * rho_liq * eq["fraction"] * volume(shape, s)
-    return 2.0 * math.pi * math.sqrt(m_eff / bob_stiffness(shape, s, eq["h"], rho_liq, g))
+    return 2.0 * math.pi * math.sqrt(m_eff / bob_stiffness(shape, s, eq["h"], rho_liq, g, tank_area))
 
 
 def terminal_speed(shape, s, rho_obj, rho_liq, mu, g):
@@ -227,21 +240,31 @@ def terminal_speed(shape, s, rho_obj, rho_liq, mu, g):
 
 # ---------------- dynamics ----------------
 
+def vessel_of(p):
+    """(vessel dict, water level before the object goes in, m). The stones
+    (extra, cm^3) lie on the bottom and push the water up by extra / A."""
+    ves = VESSELS[p.get("vessel", "tank")]
+    fill = p.get("depth", FILL * 100.0) / 100.0 + p.get("extra", 0.0) * 1e-6 / ves["area"]
+    return ves, fill
+
+
 class _Body(object):
     def __init__(self, p, solid, liquid):
         self.shape, self.s, self.g = p["shape"], p["size"] / 100.0, p["g"]
         self.rho_o, self.rho_l, self.mu = solid["rho"], liquid["rho"], liquid["mu"]
         self.vol = volume(self.shape, self.s)
         self.m = self.rho_o * self.vol
+        self.vessel, self.fill = vessel_of(p)
+        self.area = self.vessel["area"]
 
     def state(self, y, v):
         """All forces at bottom height y, velocity v."""
-        level, h, vsub = solve_level(self.shape, self.s, y)
+        level, h, vsub = solve_level(self.shape, self.s, y, self.fill, self.area)
         fb = buoyant_force(self.rho_l, vsub, self.g)
         m_eff = self.m + C_A * self.rho_l * vsub
         fd = drag_force(v, self.shape, self.s, self.rho_l, self.mu) if h > 0.0 else 0.0
         if 0.0 < h < self.s:
-            k = bob_stiffness(self.shape, self.s, h, self.rho_l, self.g)
+            k = bob_stiffness(self.shape, self.s, h, self.rho_l, self.g, self.area)
             fd += -2.0 * ZETA * math.sqrt(k * m_eff) * v
         fw = -self.m * self.g
         return {"level": level, "h": h, "vsub": vsub, "fb": fb, "fd": fd, "fw": fw,
@@ -276,7 +299,7 @@ def time_step(body, v):
     """Step that resolves the fastest process right now: the bobbing
     oscillation and the drag relaxation at the current speed."""
     aw = frontal_area(body.shape, body.s)          # largest waterplane
-    w_max = math.sqrt(body.rho_l * body.g * aw / ((1.0 - aw / TANK_AREA) * body.m))
+    w_max = math.sqrt(body.rho_l * body.g * aw / ((1.0 - aw / body.area) * body.m))
     return min(0.002, 0.05 / w_max, 0.3 / drag_rate(body, v))
 
 
@@ -291,30 +314,74 @@ def _frame(t, y, v, body, st, fn):
             "p_bot": round(gauge_pressure(body.rho_l, body.g, st["level"] - y), 3)}
 
 
+# ---------------- salt water ----------------
+# NaCl(aq) at 20 C (CRC Handbook): mass-% salt -> density, kg/m^3
+BRINE = [(0, 998.2), (1, 1005.3), (2, 1012.5), (4, 1026.8), (6, 1041.3), (8, 1055.9), (10, 1070.7),
+         (12, 1085.7), (14, 1100.9), (16, 1116.2), (18, 1131.9), (20, 1147.8), (22, 1164.0),
+         (24, 1180.4), (26, 1197.2)]
+SALT_SAT = 359.0      # g of salt that dissolve in 1 L (1 kg) of water at 20 C; the rest stays as crystals
+
+
+def brine_gain(salt_g_per_l):
+    """How much denser fresh water gets with this much salt stirred into each
+    litre (kg/m^3). Only what dissolves counts (saturation at 359 g/L)."""
+    s = max(0.0, min(salt_g_per_l, SALT_SAT))
+    w = 100.0 * s / (1000.0 + s)
+    for (w0, r0), (w1, r1) in zip(BRINE, BRINE[1:]):
+        if w <= w1:
+            return r0 + (r1 - r0) * (w - w0) / (w1 - w0) - BRINE[0][1]
+    return BRINE[-1][1] - BRINE[0][1]
+
+
+def salt_water(liquid, salt_g_per_l):
+    """Fresh water with salt stirred in: denser, and up to ~2x as thick."""
+    s = min(max(salt_g_per_l, 0.0), SALT_SAT)
+    return dict(liquid, id="saltwater", label="Salt water (%g g/L)" % min(salt_g_per_l, SALT_SAT),
+                rho=round(liquid["rho"] + brine_gain(s), 2), mu=liquid["mu"] * (1.0 + 0.9 * s / SALT_SAT),
+                color="#4aa3d8", salt=salt_g_per_l)
+
+
 def run(p):
     from .. import SOLIDS, FLUIDS
     solid = next(m for m in SOLIDS if m["id"] == p["material"])
     liquid = next(m for m in FLUIDS if m["id"] == p["fluid"])
-    return simulate(p, solid, liquid)
+    salt = p.get("salt", 0.0)
+    if salt > 0.0 and liquid["id"] == "water":
+        liquid = salt_water(liquid, salt)
+    fit = WELL_FIT[p["shape"]] * 100.0
+    shrunk = p.get("vessel") == "well" and p["size"] > fit
+    if shrunk:                                       # it has to fit down the well
+        p = dict(p, size=fit)
+    res = simulate(p, solid, liquid)
+    if shrunk:
+        res["notes"].append("Only a %s up to %.0f cm fits down the 10 cm well - this one is shown %.0f cm %s." % (
+            "ball" if p["shape"] == "sphere" else "block", fit, fit, "across" if p["shape"] == "sphere" else "wide"))
+    if salt > 0.0 and liquid["id"] != "saltwater":
+        res["notes"].append("The salt is only stirred into fresh water - pick 'Fresh water' to use it.")
+    elif salt > SALT_SAT:
+        res["notes"].append("Only %.0f g of salt dissolve in each litre of water; the other %.0f g just sit on "
+                            "the bottom as crystals and change nothing." % (SALT_SAT, salt - SALT_SAT))
+    return res
 
 
-def simulate(p, solid, liquid):
+def simulate(p, solid, liquid, t_max=T_MAX):
     """p: shape, size (cm), g, start (cm); solid: {id, label, rho, color};
-    liquid: {id, label, rho, mu, color}. The sandbox passes catalog objects."""
+    liquid: {id, label, rho, mu, color}. The sandbox passes catalog objects.
+    t_max: stop watching earlier (a machine that only needs the first seconds)."""
     body = _Body(p, solid, liquid)
-    s, g = body.s, body.g
-    eq = equilibrium(body.shape, s, body.rho_o, body.rho_l)
-    t_bob = bob_period(body.shape, s, body.rho_o, body.rho_l, g)
+    s, g, fill, ves = body.s, body.g, body.fill, body.vessel
+    eq = equilibrium(body.shape, s, body.rho_o, body.rho_l, fill, body.area)
+    t_bob = bob_period(body.shape, s, body.rho_o, body.rho_l, g, body.area)
 
     interval = min(0.02, max(0.004, (t_bob or 1.0) / 30.0))
-    y = max(0.0, FILL + p["start"] / 100.0 - s / 2.0)     # start: centre vs surface
+    y = max(0.0, fill + p["start"] / 100.0 - s / 2.0)     # start: centre vs surface
     v, t, held, next_rec = 0.0, 0.0, 0.0, interval
     st = body.state(y, v)
     fn = 0.0
     frames = [_frame(0.0, y, v, body, st, fn)]
-    while t < T_MAX:
+    while t < t_max:
         dt = time_step(body, v)
-        if body.state(y, v)["h"] == 0.0 and y > FILL:        # in the air: only gravity
+        if body.state(y, v)["h"] == 0.0 and y > fill:        # in the air: only gravity
             dt = min(dt, 0.002)
         y, v = _rk4(body, y, v, dt)
         t += dt
@@ -337,7 +404,7 @@ def simulate(p, solid, liquid):
 
     w = weight(body.rho_o, body.vol, g)
     fb_full = buoyant_force(body.rho_l, body.vol, g)
-    rise = (eq["level"] - FILL) * 100.0
+    rise = (eq["level"] - fill) * 100.0
     readouts = [
         {"label": "Object density", "value": solid["rho"], "unit": "kg/m\u00b3 (%s)" % solid["label"]},
         {"label": "Liquid density", "value": liquid["rho"], "unit": "kg/m\u00b3 (%s)" % liquid["label"]},
@@ -350,6 +417,15 @@ def simulate(p, solid, liquid):
          "unit": "litres"},
         {"label": "Liquid level rise", "value": round(rise, 2), "unit": "cm"},
     ]
+    extra = p.get("extra", 0.0)
+    if ves["kind"] != "tank" or extra > 0.0 or p.get("depth", FILL * 100.0) != FILL * 100.0:
+        readouts.append({"label": "Water level before it goes in", "value": round(fill * 100.0, 2),
+                         "unit": "cm (%.1f cm of water%s)" % (
+                             p.get("depth", FILL * 100.0),
+                             " + %.1f cm from %g cm³ of stones" % (extra / (ves["area"] * 1e4), extra) if extra else "")})
+        if body.shape == "sphere":
+            readouts.append({"label": "Centre of the object at rest", "value": round(
+                (eq["y"] + s / 2.0) * 100.0, 2) if eq["y"] is not None else "—", "unit": "cm above the floor"})
     if eq["state"] == "floats":
         readouts.append({"label": "Bobbing period (small bobs)", "value": round(t_bob, 3), "unit": "s"})
     else:
@@ -373,6 +449,12 @@ def simulate(p, solid, liquid):
     if liquid["mu"] > 1.0:
         notes.append("Honey is very thick (viscous): it brakes every movement, so things creep "
                      "and the bobbing dies almost at once.")
+    if ves["kind"] == "well":
+        notes.append("In the narrow well every cm³ pushed aside lifts the water %.2f mm (the well is only "
+                     "%.0f cm² across) - in the big tank it would be %.3f mm." % (
+                         10.0 / (ves["area"] * 1e4), ves["area"] * 1e4, 10.0 / (TANK_AREA * 1e4)))
+    if eq["level"] > ves["h"]:
+        notes.append("The water would rise above the rim (%.0f cm) and spill over." % (ves["h"] * 100))
     if abs(g - 9.81) > 0.3:
         notes.append("Gravity scales the weight AND the buoyancy the same way, so the floating depth "
                      "is the same as on Earth - only the speed of the motion changes.")
@@ -380,7 +462,9 @@ def simulate(p, solid, liquid):
     return {
         "frames": frames,
         "notes": notes,
-        "viz": {"tank": {"w": TANK_W, "h": TANK_H, "fill": FILL, "depth": TANK_D},
+        "viz": {"tank": {"w": ves["w"], "h": ves["h"], "fill": fill, "depth": ves["depth"], "kind": ves["kind"],
+                         "area": ves["area"], "water": p.get("depth", FILL * 100.0) / 100.0,
+                         "pile": p.get("extra", 0.0) * 1e-6 / ves["area"], "extra": p.get("extra", 0.0)},
                 "shape": body.shape, "size": s, "mass": round(body.m, 6), "volume": body.vol,
                 "weight": round(w, 6), "fb_full": round(fb_full, 6),
                 "solid": solid, "liquid": liquid, "eq": eq,
